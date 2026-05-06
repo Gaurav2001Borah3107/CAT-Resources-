@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lexicon — Word Flashcard Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --card-front: #1a1a1a;
+    --card-back: #1c1610;
+    --gold: #c9a84c;
+    --gold-light: #e8cc88;
+    --gold-dim: #7a6230;
+    --text: #e8e2d5;
+    --text-muted: #7a7468;
+    --text-dim: #4a4640;
+    --border: rgba(201,168,76,0.18);
+    --radius: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .game-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Progress */
+  .progress-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 2px;
+    background: var(--text-dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  /* Start screen */
+  .start-screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 48px 0;
+  }
+
+  .start-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .start-title span {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .start-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 360px;
+  }
+
+  /* Card container & 3D flip */
+  .card-scene {
+    width: 100%;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    min-height: 340px;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius);
+  }
+
+  .card-scene.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    min-height: 340px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-front {
+    background: var(--card-front);
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .card-back {
+    background: var(--card-back);
+    transform: rotateY(180deg);
+    gap: 18px;
+    border-color: rgba(201,168,76,0.25);
+  }
+
+  .card-tag {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  .card-word {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .card-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .card-hint svg {
+    opacity: 0.5;
+  }
+
+  /* Back face content */
+  .back-word {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--gold-light);
+    font-style: italic;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .back-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .back-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  .back-text {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+    font-weight: 300;
+  }
+
+  .back-text em {
+    color: var(--gold-light);
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: #0e0e0e;
+  }
+
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(201,168,76,0.25);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--text-dim);
+    padding: 12px 28px;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold-light);
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* End screen */
+  .end-screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 40px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+  }
+
+  .end-icon {
+    font-size: 48px;
+    line-height: 1;
+  }
+
+  .end-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    color: var(--text);
+  }
+
+  .end-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Utility */
+  .hidden { display: none !important; }
+
+  /* Card number badge */
+  .card-number {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* Entrance animation */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-scene {
+    animation: slideUp 0.4s ease both;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="game-wrap">
+  <div class="header">
+    <div class="logo">Lexicon</div>
+    <div class="tagline">Expand your vocabulary, one word at a time</div>
+  </div>
+
+  <!-- Progress (hidden on start/end) -->
+  <div class="progress-area hidden" id="progressArea">
+    <div class="progress-label">
+      <span id="progressText">Word 1 of 10</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="start-screen" id="startScreen">
+    <div>
+      <div class="start-title">Build your<br><span>vocabulary</span></div>
+    </div>
+    <div class="start-desc">10 words. Flip each card to reveal its meaning, examples, and usage notes. Press Next to continue.</div>
+    <button class="btn btn-primary" onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- Card -->
+  <div class="card-scene hidden" id="cardScene" onclick="flipCard()">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face card-front">
+        <div class="card-number" id="cardNumber">1 / 10</div>
+        <div class="card-tag">Tap to reveal</div>
+        <div class="card-word" id="frontWord">—</div>
+        <div class="card-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Click to see the meaning
+        </div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-number" id="cardNumberBack">1 / 10</div>
+        <div class="back-word" id="backWord">—</div>
+        <div class="back-section">
+          <div class="back-label">Definition</div>
+          <div class="back-text" id="backDef"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Examples</div>
+          <div class="back-text" id="backEx"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Tone &amp; Usage</div>
+          <div class="back-text" id="backTone"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Related Words</div>
+          <div class="back-text" id="backRelated"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions (Next button) -->
+  <div class="actions hidden" id="actions">
+    <button class="btn btn-ghost" onclick="flipCard()" id="peekBtn">Flip</button>
+    <button class="btn btn-primary" onclick="nextWord()">Next →</button>
+  </div>
+
+  <!-- End Screen -->
+  <div class="end-screen hidden" id="endScreen">
+    <div class="end-icon">✦</div>
+    <div class="end-title">Round Complete</div>
+    <div class="end-sub">You've reviewed all 10 words.<br>Play again to see a fresh set.</div>
+    <button class="btn btn-primary" onclick="startGame()">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  WORD LIST — add more entries here freely
+// ─────────────────────────────────────────────
+const WORDS = [
+  {
+    word: "Enigmatic",
+    definition: "Difficult to interpret or understand; mysterious and puzzling in a way that invites curiosity. An enigmatic person or thing gives little away, leaving observers intrigued rather than informed. The word conveys a sense of depth — that something meaningful lies beneath the surface but is deliberately or naturally obscured.",
+    examples: `"The Mona Lisa's <em>enigmatic</em> smile has fascinated art lovers for centuries." / "She gave an <em>enigmatic</em> response — neither confirming nor denying the rumour."`,
+    tone: "Neutral to admiring. Used in literary, intellectual, and journalistic writing. Often applied to people (leaders, artists), texts, smiles, or historical events. Rarely used in casual speech; it carries a slightly elevated, literary register.",
+    related: "Mysterious, cryptic, inscrutable, sphinx-like, elusive, arcane."
+  },
+  {
+    word: "Allude",
+    definition: "To refer to something indirectly, without naming or describing it explicitly. When you allude to something, you hint at it, assume the listener will catch the reference, or deliberately avoid stating it plainly. It is different from 'elude' (to escape) — a very common confusion.",
+    examples: `"She <em>alluded</em> to the scandal without ever naming the politician involved." / "The poem <em>alludes</em> to the myth of Orpheus in its imagery of descent and loss."`,
+    tone: "Formal to literary. Common in academic writing, criticism, and careful prose. The noun form 'allusion' is especially frequent in literary analysis. Implies a shared cultural or intellectual knowledge between speaker and listener.",
+    related: "Hint at, suggest, imply, intimate, refer obliquely to. Noun: allusion."
+  },
+  {
+    word: "Exemplify",
+    definition: "To serve as a typical or ideal example of something; to illustrate a quality or principle through a concrete case. It can also mean to give an example of something in explanation. It implies that the example is not just relevant but representative — a stand-in for the whole category.",
+    examples: `"His career <em>exemplifies</em> the hard work and sacrifice required to reach the top." / "The graph <em>exemplifies</em> the sharp rise in urban migration after industrialisation."`,
+    tone: "Neutral to formal. Very common in academic writing, essays, and professional reports. Slightly more authoritative than 'shows' or 'illustrates.' Used both in critical praise and neutral description.",
+    related: "Illustrate, typify, embody, demonstrate, represent, epitomise."
+  },
+  {
+    word: "Salve",
+    definition: "As a noun: a healing ointment or cream applied to wounds or sores. As a verb (figurative): to soothe or ease feelings of guilt, distress, or discomfort — often one's conscience. The figurative use is very common and slightly more interesting: a 'salve to one's conscience' means an action taken mainly to make oneself feel better, not necessarily to genuinely help.",
+    examples: `"She applied a cooling <em>salve</em> to the burn." / "The charity donation was a <em>salve</em> to his conscience after years of excess." / "His apology did little to <em>salve</em> the wounded feelings."`,
+    tone: "The literal (medical) use is neutral and clinical. The figurative use is often slightly critical or ironic — implying that the 'salving' is superficial or self-serving. Common in literary and opinion writing.",
+    related: "Ointment, balm, unguent (literal); soothe, appease, ease, pacify (figurative)."
+  },
+  {
+    word: "Allegory",
+    definition: "A story, poem, image, or other work of art in which the characters and events are symbols that represent deeper moral, political, or spiritual meanings. An allegory operates on two levels simultaneously: the surface narrative and the deeper abstract meaning it encodes. Unlike a simple metaphor, an allegory is sustained throughout an entire work.",
+    examples: `"George Orwell's <em>Animal Farm</em> is a political <em>allegory</em> for the Russian Revolution." / "Plato's Allegory of the Cave uses prisoners watching shadows to represent humanity's relationship to truth and knowledge."`,
+    tone: "Academic and literary. Central to discussions of literature, art history, theology, and philosophy. Knowing the word well means also understanding its siblings: symbol, metaphor, parable, fable.",
+    related: "Parable, fable, metaphor, symbol, extended metaphor, typology."
+  },
+  {
+    word: "Mind–Body Problem",
+    definition: "A central question in philosophy of mind: how does the subjective, conscious mind relate to the physical brain and body? If the mind is non-physical (thoughts, feelings, consciousness), how can it interact with physical matter? This problem was famously articulated by Descartes, who proposed that mind and body are separate substances (dualism) — a view that created as many problems as it solved.",
+    examples: `"Neuroscience can describe neural correlates of emotion, but the <em>mind–body problem</em> asks whether those physical processes are identical to, or merely correlated with, the feeling itself." / "Philosophers like Chalmers use the term 'the hard problem of consciousness' to capture what is most difficult about the <em>mind–body problem</em>."`,
+    tone: "Strictly philosophical and academic. Used in philosophy, cognitive science, and theology. Not used casually. Often invoked when discussing consciousness, AI, free will, or personal identity.",
+    related: "Dualism, physicalism, monism, consciousness, qualia, hard problem of consciousness, Cartesian dualism."
+  },
+  {
+    word: "Cosmopolitan",
+    definition: "As an adjective: (1) familiar with and at ease in many different countries, cultures, and communities; worldly and sophisticated; (2) including or containing people from many different countries. As a noun: a cosmopolitan person. The word comes from Greek: 'kosmos' (world) + 'polites' (citizen) — literally, 'citizen of the world.'",
+    examples: `"London is one of the most <em>cosmopolitan</em> cities in the world, with over 300 languages spoken." / "She had a <em>cosmopolitan</em> upbringing, having lived in Tokyo, Paris, and Buenos Aires by the age of 16."`,
+    tone: "Generally positive and aspirational. Implies openness, cultural fluency, and sophistication. However, critics (especially from postcolonial theory) note that 'cosmopolitan' can implicitly privilege elite, mobile, Western subjects while ignoring structural inequalities.",
+    related: "Worldly, international, multicultural, global, sophisticated. Antonym: parochial, provincial."
+  },
+  {
+    word: "Cosmopolitanism",
+    definition: "A philosophical and political idea that all human beings belong to a single community, regardless of national, cultural, or religious difference. Cosmopolitanism holds that our moral obligations extend beyond our immediate group to all of humanity. There are weaker versions (we should care about all people) and stronger versions (we should support global political institutions that override national sovereignty).",
+    examples: `"Kant's <em>cosmopolitanism</em> argued for a federation of free states and universal hospitality toward foreigners." / "Critics of <em>cosmopolitanism</em> argue that it can erode the particular cultural loyalties that give life meaning."`,
+    tone: "Academic and philosophical, also used in political theory, ethics, and international relations. Can be used positively (advocating global solidarity) or critically (dismissing it as elitist or naïve).",
+    related: "Globalism, universalism, world citizenship, transnationalism. Contrast: nationalism, communitarianism, particularism."
+  },
+  {
+    word: "Rife",
+    definition: "Widespread; very common — almost always used for something undesirable. Something 'rife' is not just present but pervasive, as if it has spread unchecked. The phrase 'rife with' is extremely common: meaning full of or overrun by something negative.",
+    examples: `"The industry was <em>rife</em> with corruption." / "Social media is <em>rife with</em> misinformation." / "The manuscript was <em>rife with</em> errors — nearly every paragraph needed correction."`,
+    tone: "Negative connotation almost always. Journalistic, critical, and conversational. Rarely used for positive things — you would not say 'rife with kindness.' Using it for something positive would sound ironic or sarcastic.",
+    related: "Rampant, widespread, pervasive, prevalent, epidemic, ubiquitous (though 'ubiquitous' is neutral). Antonym: rare, uncommon."
+  },
+  {
+    word: "Orientalist / Orientalism",
+    definition: "<em>Orientalism</em> (the concept): A framework of analysis developed by scholar Edward Said (1978) describing how Western cultures have historically constructed a distorted, essentialised, and often romanticised image of 'the East' (the Middle East, Asia, North Africa). This representation served to justify colonialism by depicting Eastern peoples as exotic, irrational, backward, and in need of Western governance. An <em>orientalist</em> is someone who studies or perpetuates this worldview.",
+    examples: `"Said argued that 19th-century novels and paintings were not neutral depictions of the East but <em>orientalist</em> texts that reinforced colonial power structures." / "The film's portrayal of Middle Eastern characters was criticised as <em>orientalist</em> — reducing a diverse region to a backdrop of danger and exoticism."`,
+    tone: "Critical and academic. Widely used in postcolonial studies, cultural criticism, literary theory, and media studies. Calling something 'orientalist' is almost always a critique — it accuses a representation of being reductive, ideologically biased, and complicit in power structures.",
+    related: "Postcolonialism, Said, othering, exoticism, stereotyping, essentialism, the 'Other'."
+  },
+  {
+    word: "Ambivalent",
+    definition: "Having mixed, contradictory, or uncertain feelings about something or someone at the same time. Ambivalence is not indifference — it is the presence of two opposing emotions simultaneously (e.g., love and resentment, excitement and fear). It is a more precise and psychologically rich word than 'unsure' or 'mixed feelings.'",
+    examples: `"She felt deeply <em>ambivalent</em> about leaving her hometown — thrilled by the opportunity but grieving the loss." / "He had an <em>ambivalent</em> relationship with fame: he craved recognition but hated the scrutiny."`,
+    tone: "Neutral to introspective. Common in psychological, literary, and personal contexts. More sophisticated than saying 'I have mixed feelings.' Frequently used in literary criticism to describe a character's complex inner state.",
+    related: "Conflicted, torn, equivocal, undecided, of two minds. Noun: ambivalence. Antonym: unambiguous, wholehearted."
+  },
+  {
+    word: "Determinism",
+    definition: "The philosophical view that every event, including every human thought and action, is causally determined by prior events and natural laws. If determinism is true, given the state of the universe at any moment, only one future is possible. This has profound implications for free will: if all actions are the inevitable result of prior causes, in what sense can anyone be said to choose freely?",
+    examples: `"Hard <em>determinism</em> holds that free will is an illusion — our choices are just the product of brain chemistry and prior history." / "Some argue that quantum indeterminacy undermines <em>determinism</em> at the physical level."`,
+    tone: "Philosophical and academic. Used in philosophy, cognitive science, theology, and increasingly in discussions of AI and law (e.g., can a criminal be blamed if their actions were determined?). Often contrasted with free will, indeterminism, or compatibilism.",
+    related: "Causation, fatalism, hard determinism, compatibilism, free will, necessity. Antonym: indeterminism, libertarian free will."
+  },
+  {
+    word: "Contingency",
+    definition: "The quality of being possible but not certain; dependence on circumstances that could have been otherwise. A contingent fact is one that happens to be true but could have been false — it is not necessary. In philosophy, contingency is contrasted with necessity. In planning, a contingency is a provision for something that might happen. Both senses revolve around the idea of 'what might have been otherwise.'",
+    examples: `"The <em>contingency</em> of history — the fact that things could always have unfolded differently — is a central theme of counterfactual history." / "The project budget included a 15% <em>contingency</em> for unforeseen costs."`,
+    tone: "The philosophical sense is academic and abstract. The planning sense is professional and practical. Both are formal. Understanding the philosophical sense greatly enriches engagement with history, ethics, and social theory.",
+    related: "Possibility, uncertainty, chance, accident, fortune (philosophical); backup plan, provision, reserve (practical). Antonym: necessity, inevitability."
+  },
+  {
+    word: "Warranted",
+    definition: "Justified; having a good reason or sufficient grounds. When an action, belief, or response is warranted, it is appropriate given the circumstances — there is legitimate reason for it. The opposite, 'unwarranted,' means without justification, excessive, or uncalled-for.",
+    examples: `"Given the evidence, her caution was entirely <em>warranted</em>." / "The criticism, while harsh, was not entirely <em>unwarranted</em>." / "Is the level of public anxiety about this issue <em>warranted</em> by the actual data?"`,
+    tone: "Neutral to formal. Used in legal, academic, journalistic, and professional contexts. Often used to evaluate the proportionality or legitimacy of a response or belief. A very useful analytical word.",
+    related: "Justified, merited, deserved, appropriate, defensible. Antonym: unwarranted, unjustified, gratuitous."
+  },
+  {
+    word: "Indignant",
+    definition: "Feeling or expressing strong displeasure at something considered unjust, unfair, or insulting. Indignation is more charged than mere annoyance — it carries a sense of moral outrage, the feeling that something wrong has been done to oneself or others. It implies the person believes they or others deserve better.",
+    examples: `"She was <em>indignant</em> at being accused of dishonesty without any evidence." / "The workers were <em>indignant</em> that their years of service had been dismissed with a form letter."`,
+    tone: "Emotionally charged but dignified — implies the person feels their outrage is justified. Common in narrative writing, reported speech, and opinion pieces. Less hysterical than 'furious,' more principled than 'annoyed.'",
+    related: "Outraged, aggrieved, affronted, offended, scandalised. Noun: indignation. Antonym: pleased, accepting, resigned."
+  },
+  {
+    word: "Facetious",
+    definition: "Treating serious issues with inappropriate humour or flippancy; not meant to be taken seriously, often to an annoying degree. A facetious remark is one that trivialises something or deflects with a joke when seriousness is called for. It is similar to 'flippant' but often implies a deliberate (and irritating) attempt at wit.",
+    examples: `"Stop being <em>facetious</em> — this is a genuinely difficult situation." / "'Oh yes, I'm sure it was all Napoleon's fault,' he said, in an obviously <em>facetious</em> tone."`,
+    tone: "Often used critically, implying disapproval of the person's levity. However, can be used self-deprecatingly: 'I'm being facetious, of course.' Belongs to a slightly elevated register — more precise than 'jokey' or 'sarcastic.'",
+    related: "Flippant, glib, tongue-in-cheek, sardonic, jesting, frivolous. Antonym: earnest, sincere, serious."
+  },
+  {
+    word: "Eclectic",
+    definition: "Deriving ideas, styles, or elements from a broad and diverse range of sources, rather than following a single system or tradition. An eclectic person, collection, or approach does not commit to one school of thought but draws freely from many. It implies openness and variety, though occasionally implies a lack of coherence.",
+    examples: `"Her musical taste is wildly <em>eclectic</em> — from Baroque counterpoint to Detroit techno." / "The café had an <em>eclectic</em> décor: vintage maps, neon signs, and antique furniture side by side."`,
+    tone: "Usually positive or neutral — suggesting breadth and openness. Can be subtly critical if it implies inconsistency or lack of rigour ('the book is <em>eclectic</em> to the point of confusion'). Common in art, music, design, philosophy, and food writing.",
+    related: "Diverse, varied, wide-ranging, heterogeneous, broad, syncretic. Antonym: narrow, uniform, orthodox, purist."
+  },
+  {
+    word: "Predispose",
+    definition: "To make someone inclined or susceptible to something in advance — before the fact. A predisposition is a pre-existing tendency, whether biological, psychological, or circumstantial, that makes a certain outcome more likely. It does not determine the outcome but tilts the odds.",
+    examples: `"Growing up in a musical household <em>predisposed</em> her to pursue a career in composition." / "Certain genetic factors can <em>predispose</em> individuals to developing anxiety disorders." / "His early experiences with failure had <em>predisposed</em> him to distrust institutions."`,
+    tone: "Neutral to clinical. Very common in psychology, medicine, sociology, and literary analysis. Useful for describing background conditions without implying strict determinism — it acknowledges agency while noting prior influence.",
+    related: "Incline, dispose, make susceptible, bias, prime. Noun: predisposition."
+  },
+  {
+    word: "Unsolicited",
+    definition: "Not asked for; given or offered without being requested. Unsolicited things are often unwelcome precisely because they were not invited — they presume a relationship or interest that may not exist. The word is most commonly used with 'advice' or 'feedback,' which people often resent when it comes uninvited.",
+    examples: `"She bristled at his <em>unsolicited</em> advice about her career choices." / "The firm received hundreds of <em>unsolicited</em> applications." / "He was known for offering <em>unsolicited</em> opinions on everything from politics to interior design."`,
+    tone: "Often mildly negative, implying the unwelcomeness of the thing given. Formal to neutral. Very common in professional, legal (unsolicited emails/spam), and social contexts.",
+    related: "Uninvited, unrequested, unwanted, volunteered, gratuitous. Antonym: solicited, requested, invited."
+  },
+  {
+    word: "Glut and Famine",
+    definition: "A recurring economic pattern (often called the 'feast and famine cycle' in industries) where periods of overabundance (glut) — too much supply, falling prices, overcapacity — are followed by periods of severe shortage (famine) — undersupply, price spikes, and scarcity. The cycle is driven by overreaction: producers flood a market during good times, driving prices down; many exit the market during bad times, creating the next shortage.",
+    examples: `"The oil industry is notorious for its cycles of <em>glut and famine</em>: a price spike encourages overproduction, the market floods, prices crash, investment dries up, and eventually scarcity returns." / "Freelance writers often speak of <em>glut and famine</em> — a rush of commissions one month and nothing the next."`,
+    tone: "Used in economics, business journalism, agriculture, and informal professional talk. The phrase can be literal (food supply) or metaphorical (workflow, attention, money). It vividly captures the oscillating nature of supply-demand imbalances.",
+    related: "Boom and bust, feast and famine, oversupply/undersupply, commodity cycle, overcapacity, scarcity."
+  },
+  {
+    word: "Bullwhip Effect",
+    definition: "A supply chain phenomenon in which small fluctuations in consumer demand lead to increasingly large swings in demand and inventory levels as you move further up the supply chain (from retailer → wholesaler → distributor → manufacturer). Like the crack of a bullwhip, a small movement at the handle (consumer) creates a dramatic, amplified wave at the tip (supplier). It was formally identified by Jay Forrester and named by Hau Lee.",
+    examples: `"During the pandemic, a modest increase in demand for toilet paper was amplified by the <em>bullwhip effect</em> into a massive production surge that led to shortages." / "Companies now use real-time data sharing to reduce the <em>bullwhip effect</em> across their supply chains."`,
+    tone: "Business, logistics, and supply chain management vocabulary. Primarily academic and professional. Understanding this term is essential in operations management, economics, and business strategy. It is a very concrete and memorable metaphor.",
+    related: "Supply chain volatility, demand amplification, Forrester effect, inventory oscillation, supply chain disruption."
+  }
+];
+
+// ─────────────────────────────────────────────
+//  GAME STATE
+// ─────────────────────────────────────────────
+let deck = [];
+let currentIndex = 0;
+let isFlipped = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  deck = shuffle(WORDS).slice(0, 10);
+  currentIndex = 0;
+  isFlipped = false;
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('progressArea').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+  document.getElementById('cardScene').classList.remove('hidden');
+
+  showCard();
+}
+
+function showCard() {
+  const word = deck[currentIndex];
+  isFlipped = false;
+
+  // Reset flip
+  const scene = document.getElementById('cardScene');
+  scene.classList.remove('flipped');
+
+  // Re-trigger entrance animation
+  scene.style.animation = 'none';
+  scene.offsetHeight; // reflow
+  scene.style.animation = '';
+
+  // Populate front
+  document.getElementById('frontWord').textContent = word.word;
+  document.getElementById('cardNumber').textContent = `${currentIndex + 1} / 10`;
+  document.getElementById('cardNumberBack').textContent = `${currentIndex + 1} / 10`;
+
+  // Populate back
+  document.getElementById('backWord').innerHTML = word.word;
+  document.getElementById('backDef').innerHTML = word.definition;
+  document.getElementById('backEx').innerHTML = word.examples;
+  document.getElementById('backTone').innerHTML = word.tone;
+  document.getElementById('backRelated').innerHTML = word.related;
+
+  // Update progress
+  const pct = Math.round((currentIndex / 10) * 100);
+  document.getElementById('progressText').textContent = `Word ${currentIndex + 1} of 10`;
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  const scene = document.getElementById('cardScene');
+  if (isFlipped) {
+    scene.classList.add('flipped');
+  } else {
+    scene.classList.remove('flipped');
+  }
+}
+
+function nextWord() {
+  currentIndex++;
+  if (currentIndex >= 10) {
+    endGame();
+  } else {
+    showCard();
+  }
+}
+
+function endGame() {
+  document.getElementById('cardScene').classList.add('hidden');
+  document.getElementById('actions').classList.add('hidden');
+  document.getElementById('progressArea').classList.add('hidden');
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
