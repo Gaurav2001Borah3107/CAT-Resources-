@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Games Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #f0f0ee;
+    --border: #e0e0dc;
+    --text: #1a1a1a;
+    --text-muted: #777;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --correct: #16a34a;
+    --correct-bg: #f0fdf4;
+    --wrong: #dc2626;
+    --wrong-bg: #fef2f2;
+    --btn-bg: #1a1a1a;
+    --btn-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #d0d0cc;
+    --input-focus: #2563eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  [data-theme="dark"] {
+    --bg: #111110;
+    --surface: #1c1c1a;
+    --surface2: #242422;
+    --border: #2e2e2c;
+    --text: #e8e8e4;
+    --text-muted: #888;
+    --accent: #3b82f6;
+    --accent-light: #1e293b;
+    --correct: #22c55e;
+    --correct-bg: #052e16;
+    --wrong: #f87171;
+    --wrong-bg: #2d0c0c;
+    --btn-bg: #e8e8e4;
+    --btn-text: #111110;
+    --input-bg: #242422;
+    --input-border: #3a3a38;
+    --input-focus: #3b82f6;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* === LAYOUT === */
+  .shell {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* === TOP BAR === */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .topbar-logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .topbar-logo span { color: var(--accent); }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .theme-toggle:hover { color: var(--text); border-color: var(--accent); }
+  .theme-toggle .icon { font-size: 15px; }
+
+  /* === CARD === */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow);
+  }
+
+  /* === SECTION HEADER === */
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .section-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  /* === GAME MENU TABLE === */
+  .game-list { display: flex; flex-direction: column; gap: 10px; }
+  .game-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s;
+  }
+  .game-row:hover { border-color: var(--accent); }
+  .game-info { flex: 1; min-width: 0; }
+  .game-name { font-weight: 600; font-size: 15px; margin-bottom: 3px; }
+  .game-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+  /* === BUTTONS === */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 20px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-accent {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-accent:hover { opacity: 0.9; }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { font-size: 13px; padding: 6px 14px; }
+  .btn-danger { background: var(--wrong-bg); color: var(--wrong); border: 1px solid transparent; }
+  .btn-danger:hover { border-color: var(--wrong); }
+
+  /* === INPUTS === */
+  input[type="number"], input[type="text"] {
+    font-family: 'DM Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    text-align: center;
+    width: 180px;
+    padding: 12px 16px;
+    background: var(--input-bg);
+    border: 2px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input:focus { border-color: var(--input-focus); }
+
+  /* === RADIO === */
+  .radio-group { display: flex; flex-direction: column; gap: 10px; }
+  .radio-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface2);
+  }
+  .radio-label:hover { border-color: var(--accent); }
+  .radio-label input { margin-top: 2px; accent-color: var(--accent); }
+  .radio-label-text { flex: 1; }
+  .radio-label-title { font-weight: 600; font-size: 14px; }
+  .radio-label-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* === GAME QUESTION DISPLAY === */
+  .question-area { text-align: center; padding: 20px 0; }
+  .big-eq {
+    font-family: 'DM Mono', monospace;
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+  }
+  .big-eq .eq-op { color: var(--text-muted); }
+
+  /* === STAT BAR === */
+  .stat-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-item { display: flex; align-items: center; gap: 5px; }
+  .stat-label { color: var(--text-muted); font-weight: 500; }
+  .stat-value { font-weight: 700; font-family: 'DM Mono', monospace; }
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.correct { color: var(--correct); }
+  .stat-value.wrong { color: var(--wrong); }
+
+  /* === FEEDBACK === */
+  .feedback {
+    font-size: 15px;
+    font-weight: 600;
+    min-height: 24px;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .feedback.correct { color: var(--correct); }
+  .feedback.wrong { color: var(--wrong); }
+
+  /* === DIVIDER === */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* === RESULTS === */
+  .results-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 20px;
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .result-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .result-stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .result-stat-box .rsb-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+  .result-stat-box .rsb-val { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .rsb-val.correct { color: var(--correct); }
+  .rsb-val.accent { color: var(--accent); }
+
+  /* === TABLE === */
+  .results-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+  .results-table th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .results-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+  }
+  .results-table tr.row-correct td { background: var(--correct-bg); }
+  .results-table tr.row-wrong td { background: var(--wrong-bg); }
+  .text-correct { color: var(--correct); font-weight: 700; }
+  .text-wrong { color: var(--wrong); font-weight: 700; }
+
+  /* === SCORECARD === */
+  .scorecard-section { margin-top: 20px; }
+  .scorecard-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .scorecard-header {
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .scorecard-body { padding: 12px; }
+  .scorecard-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 16px;
+    font-style: italic;
+  }
+  .scorecard-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .scorecard-table th {
+    padding: 6px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    text-align: center;
+  }
+  .scorecard-table td {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+  }
+  .scorecard-table tr:nth-child(even) td { background: var(--surface2); }
+
+  /* === MULT TABLE === */
+  .mult-outline { width: 80%; margin: 0 auto 16px; border-collapse: collapse; }
+  .mult-outline td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+  }
+  .mult-outline td.filled { color: var(--correct); font-weight: 600; background: var(--correct-bg); }
+  .mult-outline td.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+  .mult-outline td.empty { color: var(--text-muted); }
+
+  /* === BACK LINK === */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: color 0.15s;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* === BUTTONS ROW === */
+  .btn-row { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* === HIDDEN === */
+  .hidden { display: none !important; }
+  .center { text-align: center; }
+
+  /* === VERTICAL RULE FOR HINTS === */
+  .hint-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .hint-box strong { color: var(--text); }
+
+  /* === PILL / BADGE === */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .pill-easy { background: var(--accent-light); color: var(--accent); }
+  .pill-hard { background: var(--wrong-bg); color: var(--wrong); }
+
+  kbd {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* === NUMPAD === */
+  .numpad-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+    margin-bottom: 10px;
+  }
+  .numpad-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .numpad-toggle.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+
+  .numpad-wrap {
+    display: none;
+    margin: 8px auto 4px;
+    width: fit-content;
+  }
+  .numpad-wrap.visible { display: block; }
+
+  /* Grid layout: 4 columns (3 digits + Enter), 4 rows */
+  .numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 64px) 72px;
+    grid-template-rows: repeat(3, 60px) 60px;
+    gap: 6px;
+  }
+
+  .npk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 600;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.1s, transform 0.08s;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 0;
+  }
+  .npk:hover { background: var(--surface2); border-color: var(--accent); }
+  .npk:active { transform: scale(0.93); background: var(--accent-light); }
+
+  /* Enter: tall — spans all 4 rows on right column */
+  .npk.npk-enter {
+    grid-column: 4;
+    grid-row: 1 / 4;
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: none;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: var(--radius-sm);
+  }
+  .npk.npk-enter:hover { opacity: 0.88; transform: none; }
+  .npk.npk-enter:active { opacity: 0.75; transform: scale(0.97); }
+  .npk.npk-enter .enter-arrow { writing-mode: horizontal-tb; font-size: 16px; }
+
+  /* 0: spans 2 columns */
+  .npk.npk-zero {
+    grid-column: 1 / 3;
+  }
+
+  /* Del: normal size, bottom-right of digit area */
+  .npk.npk-del {
+    font-size: 18px;
+    color: var(--text-muted);
+    grid-column: 3;
+    grid-row: 4;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-logo">Math<span>Games</span></div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <span class="icon" id="theme-icon">🌙</span>
+      <span id="theme-label">Dark</span>
+    </button>
+  </div>
+
+  <!-- MENU -->
+  <div id="app-menu" class="app-screen">
+    <div class="card">
+      <div class="section-title">Mental Math Games</div>
+      <div class="section-sub">Pick a game and test your speed</div>
+      <div class="game-list">
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Complement to 100</div>
+            <div class="game-desc">A number 1–99 is shown. Enter its complement. (e.g. 25 → 75). 20 questions, timed.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('comp')">Play</button>
+        </div>
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Times Table Challenge</div>
+            <div class="game-desc">Speed test for multiplication tables. Normal or Hard mode. 10 steps.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('mult')">Play</button>
+        </div>
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Three Sum</div>
+            <div class="game-desc">Add three 3-digit numbers as fast as you can. 10 questions.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('3sum')">Play</button>
+        </div>
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Two Sum</div>
+            <div class="game-desc">Add two random numbers. Easy (1–100) or Hard (up to 999). 20 questions.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('2sum')">Play</button>
+        </div>
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Squares &amp; Cubes</div>
+            <div class="game-desc">Recall squares (2–30) and cubes (2–20) from memory. 15 random questions, timed.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('sqcb')">Play</button>
+        </div>
+        <div class="game-row">
+          <div class="game-info">
+            <div class="game-name">Multiplication Sprint</div>
+            <div class="game-desc">Multiply numbers against the clock. Easy (2-digit × 1-digit), Medium (2×2), or Hard (3×2). 10 questions.</div>
+          </div>
+          <button class="btn btn-primary" onclick="openApp('mxp')">Play</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLEMENT GAME -->
+  <div id="app-comp" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="comp-start">
+        <div class="section-title">Complement to 100</div>
+        <div class="section-sub">20 questions — how fast can you go?</div>
+        <div class="hint-box">
+          A number between <strong>1–99</strong> is shown. Enter its <strong>complement to 100</strong>.<br>
+          Example: 25 → 75 &nbsp;|&nbsp; 64 → 36<br>
+          Press <kbd>Enter</kbd> to submit.
+        </div>
+        <div class="radio-group" style="margin-bottom:20px;" id="comp-kb-group">
+          <label class="radio-label">
+            <input type="radio" name="comp-kb" value="off" checked onchange="NumPad.setPref('comp', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="comp-kb" value="on" onchange="NumPad.setPref('comp', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="comp-start-btn" class="btn btn-accent">Start Game</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel">
+            <div class="scorecard-body"><div id="comp-start-scorecard-body"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="comp-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Q</span><span class="stat-value accent" id="comp-q-counter">1</span><span class="stat-label">/ 20</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="comp-q-timer">0.0s</span></div>
+        </div>
+        <div class="question-area center">
+          <div style="font-size:14px; color:var(--text-muted); margin-bottom:8px;">Complement to 100 of</div>
+          <div class="big-eq" id="comp-big-number">--</div>
+          <input type="number" id="comp-answer-input" placeholder="?" min="1" max="99" autocomplete="off" />
+          <br><br>
+          <button id="comp-submit-btn" class="btn btn-accent">Submit ↵</button>
+          <br><br>
+          <div id="comp-feedback-msg" class="feedback"></div>
+          <button class="numpad-toggle" id="comp-numpad-toggle" onclick="NumPad.toggle('comp')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="comp-numpad"></div>
+        </div>
+      </div>
+
+      <div id="comp-results" class="hidden">
+        <div class="section-title" id="comp-results-tagline">Results</div>
+        <div class="divider"></div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Correct</div><div class="rsb-val correct" id="comp-stat-correct">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Wrong</div><div class="rsb-val" style="color:var(--wrong)" id="comp-stat-wrong">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Avg Time</div><div class="rsb-val accent" id="comp-stat-avg">--</div></div>
+        </div>
+        <table class="results-table">
+          <thead><tr><th>#</th><th>Number</th><th>Correct</th><th>Your Ans</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="comp-results-tbody"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="comp-play-again-btn" class="btn btn-accent">Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('comp')">📋 Scorecard</button>
+        </div>
+        <div id="comp-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Complement to 100</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="comp-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MULTIPLICATION GAME -->
+  <div id="app-mult" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="mult-start">
+        <div class="section-title">Times Table Challenge</div>
+        <div class="section-sub">Choose a mode and pick a table to drill</div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Difficulty</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="mult-mode" id="mult-mode-normal" value="normal" checked>
+            <div class="radio-label-text">
+              <div class="radio-label-title">Normal</div>
+              <div class="radio-label-desc">Table outline visible. Previous answers shown. Backspace to undo.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mult-mode" id="mult-mode-hard" value="hard">
+            <div class="radio-label-text">
+              <div class="radio-label-title" style="color:var(--wrong)">Hard</div>
+              <div class="radio-label-desc">No hints. Just the equation. Pure memory challenge.</div>
+            </div>
+          </label>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Input</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="mult-kb" value="off" checked onchange="NumPad.setPref('mult', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mult-kb" value="on" onchange="NumPad.setPref('mult', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="mult-start-btn" class="btn btn-accent">Start Game</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="mult-start-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+      <div id="mult-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Step</span><span class="stat-value accent" id="mult-progressBadge">1 / 10</span></div>
+          <div class="stat-item"><span class="stat-label">Mode</span><span class="stat-value" id="mult-modeBadge">NORMAL</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="mult-timerDisplay">0:00</span></div>
+        </div>
+
+        <div id="mult-normalMode" class="center">
+          <div class="big-eq" id="mult-bigNumberNormal">12</div>
+          <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">× times table</div>
+          <table class="mult-outline" id="mult-tableOutline"></table>
+        </div>
+
+        <div id="mult-hardMode" class="center hidden">
+          <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Times table of <span id="mult-bigNumberHard">12</span></div>
+          <div class="big-eq">
+            <span id="mult-hardN">12</span><span class="eq-op"> × </span><span id="mult-hardM">1</span><span class="eq-op"> = ?</span>
+          </div>
+        </div>
+
+        <div class="center">
+          <input type="number" id="mult-answerInput" placeholder="?" autocomplete="off">
+          <div id="mult-backspaceHint" style="margin-top:10px; font-size:12px; color:var(--text-muted)"><kbd>Backspace</kbd> to undo last answer (Normal only)</div>
+          <div id="mult-toast" class="feedback" style="margin-top:8px;"></div>
+          <br>
+          <button class="numpad-toggle" id="mult-numpad-toggle" onclick="NumPad.toggle('mult')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="mult-numpad"></div>
+        </div>
+      </div>
+
+      <div id="mult-results" class="hidden">
+        <div class="section-title"><span id="mult-resultsTrophy"></span> <span id="mult-resultsTitle">Well Done!</span></div>
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Table of <strong id="mult-resultNumber">12</strong></div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Score</div><div class="rsb-val correct" id="mult-statScore">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Time</div><div class="rsb-val accent" id="mult-statTime">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Accuracy</div><div class="rsb-val accent" id="mult-statAccuracy">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Best Streak</div><div class="rsb-val accent" id="mult-statStreak">--</div></div>
+        </div>
+        <table class="results-table" style="width:100%">
+          <thead><tr><th>Expression</th><th>Your Answer</th><th>Correct</th><th>Status</th></tr></thead>
+          <tbody id="mult-reviewGrid"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="mult-play-again-btn" class="btn btn-accent">Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('mult')">📋 Scorecard</button>
+        </div>
+        <div id="mult-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Times Table</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="mult-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- THREE SUM GAME -->
+  <div id="app-3sum" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="3sum-start">
+        <div class="section-title">Three Sum</div>
+        <div class="section-sub">Add three 3-digit numbers as fast as you can</div>
+        <div class="hint-box">
+          <strong>10 questions</strong> · 3 random 3-digit numbers · unlimited time<br>
+          Press <kbd>Enter</kbd> to submit each answer.
+        </div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="3sum-kb" value="off" checked onchange="NumPad.setPref('3sum', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="3sum-kb" value="on" onchange="NumPad.setPref('3sum', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="3sum-start-btn" class="btn btn-accent">Start Challenge</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="3sum-start-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+      <div id="3sum-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Q</span><span class="stat-value accent" id="3sum-qNum">1</span><span class="stat-label">/ 10</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="3sum-timerDisplay">0.0s</span></div>
+        </div>
+        <div class="question-area center">
+          <div class="big-eq">
+            <span id="3sum-n1">---</span>
+            <span class="eq-op"> + </span>
+            <span id="3sum-n2">---</span>
+            <span class="eq-op"> + </span>
+            <span id="3sum-n3">---</span>
+            <span class="eq-op"> = ?</span>
+          </div>
+          <input type="number" id="3sum-answerInput" placeholder="?" autocomplete="off" />
+          <br><br>
+          <button id="3sum-submit-btn" class="btn btn-accent">Submit ↵</button>
+          <br><br>
+          <div id="3sum-feedbackMsg" class="feedback"></div>
+          <button class="numpad-toggle" id="3sum-numpad-toggle" onclick="NumPad.toggle('3sum')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="3sum-numpad"></div>
+        </div>
+      </div>
+
+      <div id="3sum-results" class="hidden">
+        <div class="section-title" id="3sum-resultsTitle">Challenge Complete!</div>
+        <div class="section-sub">Here's how you did across all 10 questions</div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Correct</div><div class="rsb-val correct" id="3sum-totalCorrect">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Avg Time</div><div class="rsb-val accent" id="3sum-avgTime">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Best Time</div><div class="rsb-val accent" id="3sum-bestTime">--</div></div>
+        </div>
+        <table class="results-table">
+          <thead><tr><th>#</th><th>Equation</th><th>Your Ans</th><th>Correct</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="3sum-resultsBody"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="3sum-play-again-btn" class="btn btn-accent">Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('3sum')">📋 Scorecard</button>
+        </div>
+        <div id="3sum-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Three Sum</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="3sum-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TWO SUM GAME -->
+  <div id="app-2sum" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="2sum-start">
+        <div class="section-title">Two Sum</div>
+        <div class="section-sub" id="2sum-startSubtitle">20 questions · timed · no mercy</div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Difficulty</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="2sum-mode" id="2sum-mode-easy" value="easy" checked onchange="TwoSumGame.setDiff(false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Easy</div>
+              <div class="radio-label-desc">Numbers from 1 to 100</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="2sum-mode" id="2sum-mode-hard" value="hard" onchange="TwoSumGame.setDiff(true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title" style="color:var(--wrong)">Hard</div>
+              <div class="radio-label-desc">Numbers up to 999. Mixed 2 & 3 digit pairs.</div>
+            </div>
+          </label>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Input</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="2sum-kb" value="off" checked onchange="NumPad.setPref('2sum', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="2sum-kb" value="on" onchange="NumPad.setPref('2sum', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="2sum-start-btn" class="btn btn-accent">Start Game</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="2sum-start-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+      <div id="2sum-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Q</span><span class="stat-value accent" id="2sum-qNum">1</span><span class="stat-label">/ 20</span></div>
+          <div class="stat-item"><span class="stat-label">Mode</span><span class="stat-value" id="2sum-modePillGame">EASY</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="2sum-timerBadge">0.0s</span></div>
+        </div>
+        <div class="question-area center">
+          <div class="big-eq">
+            <span id="2sum-num1">—</span>
+            <span class="eq-op"> + </span>
+            <span id="2sum-num2">—</span>
+            <span class="eq-op"> = ?</span>
+          </div>
+          <input type="number" id="2sum-answerInput" placeholder="0" autocomplete="off" />
+          <br><br>
+          <button id="2sum-submit-btn" class="btn btn-accent">Submit ↵</button>
+          <br><br>
+          <div id="2sum-feedbackFlash" class="feedback"></div>
+          <button class="numpad-toggle" id="2sum-numpad-toggle" onclick="NumPad.toggle('2sum')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="2sum-numpad"></div>
+        </div>
+      </div>
+
+      <div id="2sum-results" class="hidden">
+        <div class="section-title">Final Results</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Mode: <span id="2sum-modePillResults" class="pill pill-easy">EASY</span></div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Correct</div><div class="rsb-val correct" id="2sum-totalCorrect">—</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Avg Time / Q</div><div class="rsb-val accent" id="2sum-avgTime">—</div></div>
+        </div>
+        <table class="results-table">
+          <thead><tr><th>#</th><th>Question</th><th>Your Ans</th><th>Correct</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="2sum-resultsBody"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="2sum-restart-btn" class="btn btn-accent">↺ Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('2sum')">📋 Scorecard</button>
+        </div>
+        <div id="2sum-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Two Sum</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="2sum-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SQUARES & CUBES GAME -->
+  <div id="app-sqcb" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="sqcb-start">
+        <div class="section-title">Squares &amp; Cubes</div>
+        <div class="section-sub">15 random questions — squares (2–30) and cubes (2–20)</div>
+        <div class="hint-box">
+          You'll be asked to recall <strong>squares</strong> (2² … 30²) and <strong>cubes</strong> (2³ … 20³).<br>
+          15 random questions · each question is timed · press <kbd>Enter</kbd> to submit.
+        </div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="sqcb-kb" value="off" checked onchange="NumPad.setPref('sqcb', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="sqcb-kb" value="on" onchange="NumPad.setPref('sqcb', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="sqcb-start-btn" class="btn btn-accent">Start Game</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="sqcb-start-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+      <div id="sqcb-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Q</span><span class="stat-value accent" id="sqcb-qNum">1</span><span class="stat-label">/ 15</span></div>
+          <div class="stat-item"><span class="stat-label">✓</span><span class="stat-value correct" id="sqcb-correctCount">0</span></div>
+          <div class="stat-item"><span class="stat-label">✗</span><span class="stat-value wrong" id="sqcb-wrongCount">0</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="sqcb-timerDisplay">0.0s</span></div>
+        </div>
+        <div class="question-area center">
+          <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;" id="sqcb-question-type">Square of</div>
+          <div class="big-eq" id="sqcb-question-display">--</div>
+          <input type="number" id="sqcb-answerInput" placeholder="?" autocomplete="off" />
+          <br><br>
+          <button id="sqcb-submit-btn" class="btn btn-accent">Submit ↵</button>
+          <br><br>
+          <div id="sqcb-feedbackMsg" class="feedback"></div>
+          <button class="numpad-toggle" id="sqcb-numpad-toggle" onclick="NumPad.toggle('sqcb')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="sqcb-numpad"></div>
+        </div>
+      </div>
+
+      <div id="sqcb-results" class="hidden">
+        <div class="section-title" id="sqcb-resultsTitle">Results</div>
+        <div class="section-sub" id="sqcb-resultsSub">Here's how you did across all 15 questions</div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Correct</div><div class="rsb-val correct" id="sqcb-stat-correct">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Wrong</div><div class="rsb-val" style="color:var(--wrong)" id="sqcb-stat-wrong">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Total Time</div><div class="rsb-val accent" id="sqcb-stat-total">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Avg / Q</div><div class="rsb-val accent" id="sqcb-stat-avg">--</div></div>
+        </div>
+        <table class="results-table">
+          <thead><tr><th>#</th><th>Question</th><th>Your Ans</th><th>Correct</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="sqcb-resultsBody"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="sqcb-play-again-btn" class="btn btn-accent">↺ Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('sqcb')">📋 Scorecard</button>
+        </div>
+        <div id="sqcb-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Squares &amp; Cubes</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="sqcb-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MULTIPLICATION SPRINT GAME -->
+  <div id="app-mxp" class="app-screen hidden">
+    <button class="back-link" onclick="openApp('menu')">← Back to menu</button>
+    <div class="card">
+
+      <div id="mxp-start">
+        <div class="section-title">Multiplication Sprint</div>
+        <div class="section-sub">10 questions — pick your difficulty</div>
+        <div class="hint-box">
+          Multiply the two numbers shown as fast as you can.<br>
+          Press <kbd>Enter</kbd> to submit each answer.
+        </div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Difficulty</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="mxp-mode" id="mxp-mode-easy" value="easy" checked>
+            <div class="radio-label-text">
+              <div class="radio-label-title">Easy</div>
+              <div class="radio-label-desc">2-digit × 1-digit (e.g. 47 × 6)</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mxp-mode" id="mxp-mode-medium" value="medium">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Medium</div>
+              <div class="radio-label-desc">2-digit × 2-digit (e.g. 47 × 63)</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mxp-mode" id="mxp-mode-hard" value="hard">
+            <div class="radio-label-text">
+              <div class="radio-label-title" style="color:var(--wrong)">Hard</div>
+              <div class="radio-label-desc">3-digit × 2-digit (e.g. 347 × 63)</div>
+            </div>
+          </label>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Input</div>
+        <div class="radio-group" style="margin-bottom:20px;">
+          <label class="radio-label">
+            <input type="radio" name="mxp-kb" value="off" checked onchange="NumPad.setPref('mxp', false)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">Physical keyboard</div>
+              <div class="radio-label-desc">Type answers with your keyboard.</div>
+            </div>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="mxp-kb" value="on" onchange="NumPad.setPref('mxp', true)">
+            <div class="radio-label-text">
+              <div class="radio-label-title">On-screen keyboard</div>
+              <div class="radio-label-desc">Use the number pad shown on screen.</div>
+            </div>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button id="mxp-start-btn" class="btn btn-accent">Start Game</button>
+        </div>
+        <div class="scorecard-section">
+          <div class="scorecard-header">Your Scorecard</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="mxp-start-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+      <div id="mxp-game" class="hidden">
+        <div class="stat-bar">
+          <div class="stat-item"><span class="stat-label">Q</span><span class="stat-value accent" id="mxp-qNum">1</span><span class="stat-label">/ 10</span></div>
+          <div class="stat-item"><span class="stat-label">Mode</span><span class="stat-value" id="mxp-modeBadge">EASY</span></div>
+          <div class="stat-item"><span class="stat-label">✓</span><span class="stat-value correct" id="mxp-correctCount">0</span></div>
+          <div class="stat-item"><span class="stat-label">✗</span><span class="stat-value wrong" id="mxp-wrongCount">0</span></div>
+          <div class="stat-item"><span class="stat-label">Time</span><span class="stat-value accent" id="mxp-timerDisplay">0.0s</span></div>
+        </div>
+        <div class="question-area center">
+          <div class="big-eq">
+            <span id="mxp-num1">—</span>
+            <span class="eq-op"> × </span>
+            <span id="mxp-num2">—</span>
+            <span class="eq-op"> = ?</span>
+          </div>
+          <input type="number" id="mxp-answerInput" placeholder="?" autocomplete="off" />
+          <br><br>
+          <button id="mxp-submit-btn" class="btn btn-accent">Submit ↵</button>
+          <br><br>
+          <div id="mxp-feedbackMsg" class="feedback"></div>
+          <button class="numpad-toggle" id="mxp-numpad-toggle" onclick="NumPad.toggle('mxp')">⌨ On-screen keyboard</button>
+          <div class="numpad-wrap" id="mxp-numpad"></div>
+        </div>
+      </div>
+
+      <div id="mxp-results" class="hidden">
+        <div class="section-title" id="mxp-resultsTitle">Results</div>
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Mode: <span id="mxp-modeLabel" class="pill pill-easy">EASY</span></div>
+        <div class="result-stats">
+          <div class="result-stat-box"><div class="rsb-label">Correct</div><div class="rsb-val correct" id="mxp-stat-correct">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Wrong</div><div class="rsb-val" style="color:var(--wrong)" id="mxp-stat-wrong">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Avg Time</div><div class="rsb-val accent" id="mxp-stat-avg">--</div></div>
+          <div class="result-stat-box"><div class="rsb-label">Best Time</div><div class="rsb-val accent" id="mxp-stat-best">--</div></div>
+        </div>
+        <table class="results-table">
+          <thead><tr><th>#</th><th>Question</th><th>Your Ans</th><th>Correct</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="mxp-resultsBody"></tbody>
+        </table>
+        <div class="btn-row">
+          <button id="mxp-play-again-btn" class="btn btn-accent">↺ Play Again</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleScorecard('mxp')">📋 Scorecard</button>
+        </div>
+        <div id="mxp-scorecard" class="hidden scorecard-section">
+          <div class="scorecard-header">High Scores — Multiplication Sprint</div>
+          <div class="scorecard-panel"><div class="scorecard-body"><div id="mxp-scorecard-body"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /.shell -->
+
+<script>
+// ==================== THEME ====================
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('theme-label').textContent = isDark ? 'Dark' : 'Light';
+}
+
+// ==================== SCORE STORE ====================
+const ScoreStore = (function() {
+  const KEY = 'mathgames_scores_v1';
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) { return {}; } }
+  function save(data) { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e) {} }
+  function addScore(game, entry) {
+    const data = load();
+    if (!data[game]) data[game] = [];
+    entry.id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    entry.date = new Date().toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    data[game].unshift(entry);
+    save(data);
+  }
+  function deleteScore(game, id) {
+    const data = load();
+    if (data[game]) data[game] = data[game].filter(e => e.id !== id);
+    save(data);
+  }
+  function getScores(game) { return (load()[game] || []); }
+  return { addScore, deleteScore, getScores };
+})();
+
+function toggleScorecard(game) {
+  const panel = document.getElementById(game + '-scorecard');
+  if (panel.classList.contains('hidden')) {
+    renderScorecardInto(game, game + '-scorecard-body');
+    panel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
+  }
+}
+
+function renderScorecardInto(game, containerId) {
+  const scores = ScoreStore.getScores(game);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (!scores.length) {
+    container.innerHTML = '<div class="scorecard-empty">No scores yet. Complete a game to record your first score!</div>';
+    return;
+  }
+  const extraHeaders = { comp: 'Wrong', mult: 'Mode', '3sum': 'Best Time', '2sum': 'Mode', sqcb: 'Wrong', mxp: 'Mode' };
+  const extraKey = extraHeaders[game] || '';
+  let html = `<table class="scorecard-table"><thead><tr>
+    <th>#</th><th>Date</th><th>Correct</th><th>Avg Time</th>${extraKey ? `<th>${extraKey}</th>` : ''}<th>Del</th>
+  </tr></thead><tbody>`;
+  scores.forEach((s, i) => {
+    html += `<tr>
+      <td>${i + 1}</td><td>${s.date}</td><td>${s.correct} / ${s.total}</td><td>${s.avgTime}s</td>
+      ${extraKey ? `<td>${s.extra || '—'}</td>` : ''}
+      <td><button class="btn btn-danger btn-sm" onclick="deleteAndRefresh('${game}','${s.id}','${containerId}')">✕</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function deleteAndRefresh(game, id, containerId) {
+  ScoreStore.deleteScore(game, id);
+  [game + '-scorecard-body', game + '-start-scorecard-body'].forEach(cid => {
+    const el = document.getElementById(cid);
+    if (el) renderScorecardInto(game, cid);
+  });
+}
+
+// ==================== APP STATE ====================
+let activeApp = 'menu';
+
+function openApp(appId) {
+  activeApp = appId;
+  document.querySelectorAll('.app-screen').forEach(el => el.classList.add('hidden'));
+  document.getElementById('app-' + appId).classList.remove('hidden');
+  if (appId === 'comp') CompGame.showStart();
+  else if (appId === 'mult') MultGame.showStart();
+  else if (appId === '3sum') ThreeSumGame.showStart();
+  else if (appId === '2sum') TwoSumGame.showStart();
+  else if (appId === 'sqcb') SqCbGame.showStart();
+  else if (appId === 'mxp') MxpGame.showStart();
+  if (['comp','mult','3sum','2sum','sqcb','mxp'].includes(appId)) NumPad.applyState(appId);
+}
+
+function switchView(gamePrefix, viewName) {
+  ['start', 'game', 'results'].forEach(v => {
+    document.getElementById(`${gamePrefix}-${v}`).classList.add('hidden');
+  });
+  document.getElementById(`${gamePrefix}-${viewName}`).classList.remove('hidden');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    if (activeApp === 'comp') CompGame.handleEnter(e);
+    else if (activeApp === 'mult') MultGame.handleEnter(e);
+    else if (activeApp === '3sum') ThreeSumGame.handleEnter(e);
+    else if (activeApp === '2sum') TwoSumGame.handleEnter(e);
+    else if (activeApp === 'sqcb') SqCbGame.handleEnter(e);
+    else if (activeApp === 'mxp') MxpGame.handleEnter(e);
+  }
+  if (e.key === 'Backspace' && activeApp === 'mult') MultGame.handleBackspace(e);
+});
+
+// ==================== NUMPAD ====================
+const NumPad = (function() {
+  const PREF_KEY = 'mathgames_numpad_v1';
+  // Per-game submit callbacks registered by each game
+  const submitFns = {};
+  // Per-game input element IDs
+  const inputIds = {
+    comp: 'comp-answer-input',
+    mult: 'mult-answerInput',
+    '3sum': '3sum-answerInput',
+    '2sum': '2sum-answerInput',
+    sqcb: 'sqcb-answerInput',
+    mxp: 'mxp-answerInput',
+  };
+
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function savePrefs(p) { try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch(e) {} }
+
+  function isOn(game) {
+    return !!loadPrefs()[game];
+  }
+
+  function register(game, submitFn) {
+    submitFns[game] = submitFn;
+    build(game);
+    applyState(game);
+  }
+
+  function build(game) {
+    const wrap = document.getElementById(game + '-numpad');
+    if (!wrap || wrap.dataset.built) return;
+    wrap.dataset.built = '1';
+
+    const grid = document.createElement('div');
+    grid.className = 'numpad-grid';
+
+    // Digits 7–9, 4–6, 1–3 (rows 1–3, cols 1–3)
+    ['7','8','9','4','5','6','1','2','3'].forEach(d => {
+      const k = document.createElement('button');
+      k.className = 'npk'; k.textContent = d; k.type = 'button';
+      k.addEventListener('mousedown', e => { e.preventDefault(); pressDigit(game, d); });
+      k.addEventListener('touchstart', e => { e.preventDefault(); pressDigit(game, d); }, { passive: false });
+      grid.appendChild(k);
+    });
+
+    // Enter — tall right column (grid-row 1/4 set via CSS)
+    const kent = document.createElement('button');
+    kent.className = 'npk npk-enter'; kent.type = 'button';
+    kent.innerHTML = 'Enter<span class="enter-arrow">↵</span>';
+    kent.addEventListener('mousedown', e => { e.preventDefault(); pressEnter(game); });
+    kent.addEventListener('touchstart', e => { e.preventDefault(); pressEnter(game); }, { passive: false });
+    grid.appendChild(kent);
+
+    // Bottom row: 0 (wide, cols 1–2), del (col 3) — Enter continues col 4 via CSS
+    const k0 = document.createElement('button');
+    k0.className = 'npk npk-zero'; k0.textContent = '0'; k0.type = 'button';
+    k0.addEventListener('mousedown', e => { e.preventDefault(); pressDigit(game, '0'); });
+    k0.addEventListener('touchstart', e => { e.preventDefault(); pressDigit(game, '0'); }, { passive: false });
+    grid.appendChild(k0);
+
+    const kdel = document.createElement('button');
+    kdel.className = 'npk npk-del'; kdel.textContent = '⌫'; kdel.type = 'button';
+    kdel.addEventListener('mousedown', e => { e.preventDefault(); pressDelete(game); });
+    kdel.addEventListener('touchstart', e => { e.preventDefault(); pressDelete(game); }, { passive: false });
+    grid.appendChild(kdel);
+
+    wrap.appendChild(grid);
+  }
+
+  function pressDigit(game, d) {
+    const inp = document.getElementById(inputIds[game]);
+    if (!inp || inp.disabled) return;
+    inp.value = (inp.value === '' || inp.value === '0') ? d : inp.value + d;
+    inp.focus();
+  }
+
+  function pressDelete(game) {
+    const inp = document.getElementById(inputIds[game]);
+    if (!inp || inp.disabled) return;
+    inp.value = inp.value.slice(0, -1);
+    inp.focus();
+  }
+
+  function pressEnter(game) {
+    if (submitFns[game]) submitFns[game]();
+  }
+
+  function applyState(game) {
+    const on = isOn(game);
+    const wrap = document.getElementById(game + '-numpad');
+    const btn = document.getElementById(game + '-numpad-toggle');
+    if (wrap) wrap.classList.toggle('visible', on);
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.textContent = on ? '⌨ Hide keyboard' : '⌨ On-screen keyboard';
+    }
+    // Sync start-screen radio buttons to current preference
+    const radios = document.querySelectorAll(`input[name="${game}-kb"]`);
+    radios.forEach(r => { r.checked = (r.value === (on ? 'on' : 'off')); });
+  }
+
+  function setPref(game, on) {
+    const prefs = loadPrefs();
+    prefs[game] = on;
+    savePrefs(prefs);
+    applyState(game);
+  }
+
+  function toggle(game) {
+    const prefs = loadPrefs();
+    prefs[game] = !prefs[game];
+    savePrefs(prefs);
+    applyState(game);
+  }
+
+  return { register, toggle, applyState, setPref };
+})();
+
+// ==================== 1. COMPLEMENT GAME ====================
+const CompGame = (function() {
+  const TOTAL = 20;
+  let questions = [], current = 0, results = [], qStartTime = null, timerInterval = null;
+  const el = (id) => document.getElementById('comp-' + id);
+
+  function generateQuestions() {
+    const pool = [];
+    while (pool.length < TOTAL) {
+      const n = Math.floor(Math.random() * 99) + 1;
+      if (!pool.includes(n)) pool.push(n);
+    }
+    return pool;
+  }
+
+  function showStart() {
+    clearInterval(timerInterval);
+    switchView('comp', 'start');
+    renderScorecardInto('comp', 'comp-start-scorecard-body');
+  }
+
+  function startGame() {
+    questions = generateQuestions();
+    current = 0;
+    results = [];
+    switchView('comp', 'game');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    const n = questions[current];
+    el('big-number').textContent = n;
+    el('q-counter').textContent = current + 1;
+    const inp = el('answer-input');
+    inp.value = '';
+    inp.disabled = false;
+    el('feedback-msg').textContent = '';
+    el('feedback-msg').className = 'feedback';
+    clearInterval(timerInterval);
+    qStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      el('q-timer').textContent = ((Date.now() - qStartTime) / 1000).toFixed(1) + 's';
+    }, 100);
+    inp.focus();
+  }
+
+  function submitAnswer() {
+    const inp = el('answer-input');
+    const val = inp.value.trim();
+    if (val === '') return;
+    const userNum = parseInt(val, 10);
+    const n = questions[current];
+    const correct = 100 - n;
+    const isCorrect = userNum === correct;
+    const elapsed = (Date.now() - qStartTime) / 1000;
+    clearInterval(timerInterval);
+    results.push({ n, correct, given: userNum, isCorrect, time: elapsed });
+
+    const fb = el('feedback-msg');
+    fb.textContent = isCorrect ? '✓ Correct!' : `✗ Answer: ${correct}`;
+    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+    current++;
+
+    if (isCorrect) {
+      if (current < TOTAL) loadQuestion(); else showResults();
+    } else {
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        if (current < TOTAL) loadQuestion(); else showResults();
+      }, 600);
+    }
+  }
+
+  function showResults() {
+    switchView('comp', 'results');
+    const correct = results.filter(r => r.isCorrect).length;
+    const wrong = TOTAL - correct;
+    const avgTime = (results.reduce((a, b) => a + b.time, 0) / TOTAL).toFixed(1);
+    el('stat-correct').textContent = correct;
+    el('stat-wrong').textContent = wrong;
+    el('stat-avg').textContent = avgTime + 's';
+    el('results-tagline').textContent = correct === TOTAL ? '🎯 Perfect!' : correct >= 16 ? '🔥 Great job!' : 'Results';
+    const tbody = el('results-tbody');
+    tbody.innerHTML = '';
+    results.forEach((r, i) => {
+      tbody.innerHTML += `<tr class="${r.isCorrect ? 'row-correct' : 'row-wrong'}">
+        <td>${i+1}</td><td>${r.n}</td><td>${r.correct}</td><td>${r.given}</td>
+        <td>${r.time.toFixed(2)}s</td>
+        <td class="${r.isCorrect ? 'text-correct' : 'text-wrong'}">${r.isCorrect ? '✓' : '✗'}</td>
+      </tr>`;
+    });
+    ScoreStore.addScore('comp', { correct, total: TOTAL, avgTime, extra: wrong });
+    document.getElementById('comp-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('submit-btn').onclick = submitAnswer;
+  el('play-again-btn').onclick = showStart;
+  NumPad.register('comp', submitAnswer);
+
+  return {
+    showStart,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden')) submitAnswer();
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+// ==================== 2. MULTIPLICATION GAME ====================
+const MultGame = (function() {
+  let tableN = null, answers = [], currentStep = 0, startTime = null, timerInterval = null, wrongCount = 0, streak = 0, maxStreak = 0;
+  const el = (id) => document.getElementById('mult-' + id);
+
+  function showStart() {
+    clearInterval(timerInterval);
+    tableN = Math.floor(Math.random() * 12) + 2;
+    switchView('mult', 'start');
+    renderScorecardInto('mult', 'mult-start-scorecard-body');
+  }
+
+  function isHardMode() { return document.getElementById('mult-mode-hard').checked; }
+
+  function startGame() {
+    tableN = Math.floor(Math.random() * 12) + 2;
+    answers = [];
+    currentStep = 1;
+    wrongCount = 0;
+    streak = 0;
+    maxStreak = 0;
+    const hard = isHardMode();
+    el('modeBadge').textContent = hard ? 'HARD' : 'NORMAL';
+    el('normalMode').classList.toggle('hidden', hard);
+    el('hardMode').classList.toggle('hidden', !hard);
+    el('backspaceHint').classList.toggle('hidden', hard);
+    switchView('mult', 'game');
+
+    if (!hard) {
+      el('bigNumberNormal').textContent = tableN;
+      renderTable();
+    } else {
+      el('bigNumberHard').textContent = tableN;
+      el('hardN').textContent = tableN;
+      el('hardM').textContent = currentStep;
+    }
+
+    el('progressBadge').textContent = `${currentStep} / 10`;
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      el('timerDisplay').textContent = `${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`;
+    }, 500);
+    el('answerInput').value = '';
+    el('answerInput').focus();
+  }
+
+  function renderTable() {
+    const table = el('tableOutline');
+    table.innerHTML = '';
+    for (let m = 1; m <= 10; m++) {
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td');
+      td1.textContent = `${tableN} × ${m}`;
+      const td2 = document.createElement('td');
+      if (m < currentStep) {
+        td2.textContent = answers[m - 1];
+        td2.className = 'filled';
+      } else if (m === currentStep) {
+        td2.textContent = '?';
+        td2.className = 'active';
+      } else {
+        td2.textContent = '...';
+        td2.className = 'empty';
+      }
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      table.appendChild(tr);
+    }
+  }
+
+  function submitStep() {
+    const inp = el('answerInput');
+    const val = inp.value.trim();
+    if (!val) return;
+    const user = parseInt(val, 10);
+    const correct = tableN * currentStep;
+    const hard = isHardMode();
+    const toast = el('toast');
+    if (user === correct) {
+      answers.push(user);
+      streak++;
+      maxStreak = Math.max(maxStreak, streak);
+      toast.textContent = '✓ Correct!';
+      toast.className = 'feedback correct';
+      currentStep++;
+      if (currentStep > 10) { clearInterval(timerInterval); showResults(); return; }
+      el('progressBadge').textContent = `${currentStep} / 10`;
+      inp.value = '';
+      if (!hard) renderTable(); else { el('hardM').textContent = currentStep; }
+    } else {
+      wrongCount++;
+      streak = 0;
+      toast.textContent = `✗ Answer: ${correct}`;
+      toast.className = 'feedback wrong';
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        inp.value = '';
+        toast.textContent = '';
+        toast.className = 'feedback';
+      }, 600);
+    }
+    inp.focus();
+  }
+
+  function handleBackspace(e) {
+    if (isHardMode() || currentStep <= 1) return;
+    const inp = el('answerInput');
+    if (document.activeElement === inp && inp.value === '' && !el('game').classList.contains('hidden')) {
+      e.preventDefault();
+      currentStep--;
+      answers.pop();
+      el('progressBadge').textContent = `${currentStep} / 10`;
+      renderTable();
+      inp.value = '';
+      const toast = el('toast');
+      toast.textContent = 'Undone';
+      toast.className = 'feedback';
+      setTimeout(() => { toast.textContent = ''; }, 800);
+    }
+  }
+
+  function showResults() {
+    switchView('mult', 'results');
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const timeStr = `${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`;
+    const accuracy = Math.round((10 / (10 + wrongCount)) * 100);
+    el('resultsTitle').textContent = wrongCount === 0 ? 'Perfect!' : wrongCount <= 2 ? 'Well Done!' : 'Keep Practicing!';
+    el('resultsTrophy').textContent = wrongCount === 0 ? '🏆' : wrongCount <= 2 ? '⭐' : '';
+    el('resultNumber').textContent = tableN;
+    el('statScore').textContent = `${10 - wrongCount} / 10`;
+    el('statTime').textContent = timeStr;
+    el('statAccuracy').textContent = accuracy + '%';
+    el('statStreak').textContent = maxStreak;
+    const tbody = el('reviewGrid');
+    tbody.innerHTML = '';
+    for (let m = 1; m <= 10; m++) {
+      const correct = tableN * m;
+      const given = answers[m - 1];
+      const ok = given === correct;
+      tbody.innerHTML += `<tr class="${ok ? 'row-correct' : 'row-wrong'}">
+        <td>${tableN} × ${m}</td><td>${given ?? '—'}</td><td>${correct}</td>
+        <td class="${ok ? 'text-correct' : 'text-wrong'}">${ok ? '✓' : '✗'}</td>
+      </tr>`;
+    }
+    const mode = isHardMode() ? 'HARD' : 'NORMAL';
+    ScoreStore.addScore('mult', { correct: 10 - wrongCount, total: 10, avgTime: (elapsed / 10).toFixed(2), extra: mode });
+    document.getElementById('mult-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('answerInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitStep(); });
+  el('play-again-btn').onclick = showStart;
+  NumPad.register('mult', submitStep);
+
+  return {
+    showStart,
+    handleBackspace,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden')) submitStep();
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+
+// ==================== 3. THREE SUM GAME ====================
+const ThreeSumGame = (function() {
+  const TOTAL = 10;
+  let questions = [], currentQ = 0, results = [], qStartTime = 0, timerInterval = null, answered = false;
+  const el = (id) => document.getElementById('3sum-' + id);
+
+  function showStart() {
+    clearInterval(timerInterval);
+    switchView('3sum', 'start');
+    renderScorecardInto('3sum', '3sum-start-scorecard-body');
+  }
+
+  function startGame() {
+    questions = [];
+    for (let i = 0; i < TOTAL; i++) {
+      const a = Math.floor(Math.random() * 900) + 100;
+      const b = Math.floor(Math.random() * 900) + 100;
+      const c = Math.floor(Math.random() * 900) + 100;
+      questions.push({ a, b, c, answer: a + b + c });
+    }
+    currentQ = 0;
+    results = [];
+    switchView('3sum', 'game');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    const q = questions[currentQ];
+    el('n1').textContent = q.a;
+    el('n2').textContent = q.b;
+    el('n3').textContent = q.c;
+    el('qNum').textContent = currentQ + 1;
+    const inp = el('answerInput');
+    inp.value = '';
+    inp.disabled = false;
+    answered = false;
+    const fb = el('feedbackMsg');
+    fb.textContent = '';
+    fb.className = 'feedback';
+    clearInterval(timerInterval);
+    qStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      el('timerDisplay').textContent = ((Date.now() - qStartTime) / 1000).toFixed(1) + 's';
+    }, 100);
+    inp.focus();
+  }
+
+  function submitAnswer() {
+    if (answered) return;
+    const inp = el('answerInput');
+    const userVal = inp.value.trim();
+    if (userVal === '') return;
+    answered = true;
+    clearInterval(timerInterval);
+    const elapsed = (Date.now() - qStartTime) / 1000;
+    const q = questions[currentQ];
+    const userNum = parseInt(userVal, 10);
+    const isCorrect = userNum === q.answer;
+    results.push({ q: currentQ + 1, a: q.a, b: q.b, c: q.c, correct: q.answer, given: userNum, isCorrect, time: elapsed });
+    const fb = el('feedbackMsg');
+    fb.textContent = isCorrect ? '✓ Correct!' : `✗ Answer: ${q.answer}`;
+    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+    currentQ++;
+    if (isCorrect) {
+      if (currentQ < TOTAL) loadQuestion(); else showResults();
+    } else {
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        if (currentQ < TOTAL) loadQuestion(); else showResults();
+      }, 500);
+    }
+  }
+
+  function showResults() {
+    switchView('3sum', 'results');
+    const totalCorrect = results.filter(r => r.isCorrect).length;
+    const times = results.map(r => r.time);
+    const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+    const bestTime = Math.min(...times);
+    el('totalCorrect').textContent = `${totalCorrect}/10`;
+    el('avgTime').textContent = avgTime.toFixed(1) + 's';
+    el('bestTime').textContent = bestTime.toFixed(1) + 's';
+    if (totalCorrect === 10) el('resultsTitle').textContent = '🎯 Perfect Score!';
+    else if (totalCorrect >= 8) el('resultsTitle').textContent = '⭐ Almost Perfect!';
+    else el('resultsTitle').textContent = 'Challenge Complete!';
+    const tbody = el('resultsBody');
+    tbody.innerHTML = '';
+    results.forEach(r => {
+      tbody.innerHTML += `<tr class="${r.isCorrect ? 'row-correct' : 'row-wrong'}">
+        <td>${r.q}</td><td>${r.a}+${r.b}+${r.c}</td><td>${r.given}</td><td>${r.correct}</td>
+        <td>${r.time.toFixed(2)}s</td>
+        <td class="${r.isCorrect ? 'text-correct' : 'text-wrong'}">${r.isCorrect ? '✓' : '✗'}</td>
+      </tr>`;
+    });
+    ScoreStore.addScore('3sum', { correct: totalCorrect, total: TOTAL, avgTime: avgTime.toFixed(2), extra: bestTime.toFixed(2) + 's' });
+    document.getElementById('3sum-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('submit-btn').onclick = submitAnswer;
+  el('play-again-btn').onclick = showStart;
+  NumPad.register('3sum', submitAnswer);
+
+  return {
+    showStart,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden')) { if (!answered) submitAnswer(); }
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+
+// ==================== 4. TWO SUM GAME ====================
+const TwoSumGame = (function() {
+  const TOTAL = 20;
+  let questions = [], currentQ = 0, qStartTime = 0, timerInterval = null, isHard = false;
+  const el = (id) => document.getElementById('2sum-' + id);
+
+  function showStart() {
+    clearInterval(timerInterval);
+    switchView('2sum', 'start');
+    renderScorecardInto('2sum', '2sum-start-scorecard-body');
+  }
+
+  function setDiff(hard) {
+    isHard = hard;
+    el('startSubtitle').textContent = hard ? '20 questions · 3-digit numbers · brutal' : '20 questions · timed · no mercy';
+  }
+
+  function startGame() {
+    questions = [];
+    for (let i = 0; i < TOTAL; i++) {
+      let a, b;
+      if (!isHard) {
+        a = Math.floor(Math.random() * 100) + 1;
+        b = Math.floor(Math.random() * 100) + 1;
+      } else {
+        const big = Math.floor(Math.random() * 900) + 100;
+        const other = Math.floor(Math.random() * 990) + 10;
+        [a, b] = Math.random() < 0.5 ? [big, other] : [other, big];
+      }
+      questions.push({ a, b, answer: a + b, userAnswer: null, time: 0, correct: null });
+    }
+    currentQ = 0;
+    const modeText = isHard ? 'HARD' : 'EASY';
+    el('modePillGame').textContent = modeText;
+    el('modePillGame').style.color = isHard ? 'var(--wrong)' : 'var(--accent)';
+    el('modePillResults').textContent = modeText;
+    el('modePillResults').className = 'pill ' + (isHard ? 'pill-hard' : 'pill-easy');
+    switchView('2sum', 'game');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    const q = questions[currentQ];
+    el('num1').textContent = q.a;
+    el('num2').textContent = q.b;
+    el('qNum').textContent = currentQ + 1;
+    const inp = el('answerInput');
+    inp.value = '';
+    inp.disabled = false;
+    const fb = el('feedbackFlash');
+    fb.textContent = '';
+    fb.className = 'feedback';
+    clearInterval(timerInterval);
+    qStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      el('timerBadge').textContent = ((Date.now() - qStartTime) / 1000).toFixed(1) + 's';
+    }, 100);
+    inp.focus();
+  }
+
+  function submitAnswer() {
+    const inp = el('answerInput');
+    const raw = inp.value.trim();
+    if (!raw) return;
+    const userAns = parseInt(raw, 10);
+    const elapsed = (Date.now() - qStartTime) / 1000;
+    clearInterval(timerInterval);
+    const q = questions[currentQ];
+    q.userAnswer = userAns;
+    q.time = elapsed;
+    q.correct = (userAns === q.answer);
+    const fb = el('feedbackFlash');
+    if (q.correct) {
+      fb.textContent = '✓ Correct!'; fb.className = 'feedback correct';
+      currentQ++;
+      if (currentQ >= TOTAL) showResults(); else loadQuestion();
+    } else {
+      fb.textContent = `✗ Answer: ${q.answer}`; fb.className = 'feedback wrong';
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        currentQ++;
+        if (currentQ >= TOTAL) showResults(); else loadQuestion();
+      }, 500);
+    }
+  }
+
+  function showResults() {
+    switchView('2sum', 'results');
+    let correct = 0, totalTime = 0;
+    const tbody = el('resultsBody');
+    tbody.innerHTML = '';
+    questions.forEach((q, i) => {
+      correct += q.correct ? 1 : 0;
+      totalTime += q.time;
+      tbody.innerHTML += `<tr class="${q.correct ? 'row-correct' : 'row-wrong'}">
+        <td>${i+1}</td><td>${q.a} + ${q.b}</td><td>${q.userAnswer}</td><td>${q.answer}</td>
+        <td>${q.time.toFixed(2)}s</td>
+        <td class="${q.correct ? 'text-correct' : 'text-wrong'}">${q.correct ? '✓' : '✗'}</td>
+      </tr>`;
+    });
+    const avgTime = (totalTime / TOTAL).toFixed(2);
+    el('totalCorrect').textContent = `${correct} / ${TOTAL}`;
+    el('avgTime').textContent = avgTime + 's';
+    ScoreStore.addScore('2sum', { correct, total: TOTAL, avgTime, extra: isHard ? 'HARD' : 'EASY' });
+    document.getElementById('2sum-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('submit-btn').onclick = submitAnswer;
+  el('restart-btn').onclick = showStart;
+  NumPad.register('2sum', submitAnswer);
+
+  return {
+    showStart,
+    setDiff,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden') && !el('answerInput').disabled) submitAnswer();
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+// ==================== 5. SQUARES & CUBES GAME ====================
+const SqCbGame = (function() {
+  const TOTAL = 15;
+  let questions = [], currentQ = 0, results = [], qStartTime = 0, timerInterval = null, answered = false;
+  const el = (id) => document.getElementById('sqcb-' + id);
+
+  function buildPool() {
+    const pool = [];
+    for (let n = 2; n <= 30; n++) pool.push({ type: 'square', n, answer: n * n });
+    for (let n = 2; n <= 20; n++) pool.push({ type: 'cube',   n, answer: n * n * n });
+    return pool;
+  }
+
+  function showStart() {
+    clearInterval(timerInterval);
+    switchView('sqcb', 'start');
+    renderScorecardInto('sqcb', 'sqcb-start-scorecard-body');
+  }
+
+  function startGame() {
+    const pool = buildPool();
+    // Fisher-Yates shuffle then take first TOTAL
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    questions = pool.slice(0, TOTAL);
+    currentQ = 0;
+    results = [];
+    switchView('sqcb', 'game');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    const q = questions[currentQ];
+    el('qNum').textContent = currentQ + 1;
+    el('correctCount').textContent = results.filter(r => r.isCorrect).length;
+    el('wrongCount').textContent = results.filter(r => !r.isCorrect).length;
+    if (q.type === 'square') {
+      el('question-type').textContent = 'What is the square of';
+      el('question-display').textContent = q.n + '²  =  ?';
+    } else {
+      el('question-type').textContent = 'What is the cube of';
+      el('question-display').textContent = q.n + '³  =  ?';
+    }
+    const inp = el('answerInput');
+    inp.value = '';
+    inp.disabled = false;
+    answered = false;
+    const fb = el('feedbackMsg');
+    fb.textContent = '';
+    fb.className = 'feedback';
+    clearInterval(timerInterval);
+    qStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      el('timerDisplay').textContent = ((Date.now() - qStartTime) / 1000).toFixed(1) + 's';
+    }, 100);
+    inp.focus();
+  }
+
+  function submitAnswer() {
+    if (answered) return;
+    const inp = el('answerInput');
+    const raw = inp.value.trim();
+    if (raw === '') return;
+    answered = true;
+    clearInterval(timerInterval);
+    const elapsed = (Date.now() - qStartTime) / 1000;
+    const q = questions[currentQ];
+    const userNum = parseInt(raw, 10);
+    const isCorrect = userNum === q.answer;
+    results.push({ q: currentQ + 1, type: q.type, n: q.n, correct: q.answer, given: userNum, isCorrect, time: elapsed });
+    const fb = el('feedbackMsg');
+    fb.textContent = isCorrect ? '✓ Correct!' : `✗ Answer: ${q.answer}`;
+    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+    currentQ++;
+    if (isCorrect) {
+      if (currentQ < TOTAL) loadQuestion(); else showResults();
+    } else {
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        if (currentQ < TOTAL) loadQuestion(); else showResults();
+      }, 600);
+    }
+  }
+
+  function showResults() {
+    switchView('sqcb', 'results');
+    const totalCorrect = results.filter(r => r.isCorrect).length;
+    const totalWrong = TOTAL - totalCorrect;
+    const totalTime = results.reduce((s, r) => s + r.time, 0);
+    const avgTime = totalTime / TOTAL;
+    el('stat-correct').textContent = totalCorrect;
+    el('stat-wrong').textContent = totalWrong;
+    el('stat-total').textContent = totalTime.toFixed(1) + 's';
+    el('stat-avg').textContent = avgTime.toFixed(1) + 's';
+    if (totalCorrect === TOTAL) el('resultsTitle').textContent = '🎯 Perfect Score!';
+    else if (totalCorrect >= 12) el('resultsTitle').textContent = '⭐ Great Job!';
+    else if (totalCorrect >= 8) el('resultsTitle').textContent = 'Good Effort!';
+    else el('resultsTitle').textContent = 'Keep Practicing!';
+    const tbody = el('resultsBody');
+    tbody.innerHTML = '';
+    results.forEach(r => {
+      const label = r.type === 'square' ? `${r.n}²` : `${r.n}³`;
+      tbody.innerHTML += `<tr class="${r.isCorrect ? 'row-correct' : 'row-wrong'}">
+        <td>${r.q}</td><td>${label}</td><td>${r.given}</td><td>${r.correct}</td>
+        <td>${r.time.toFixed(2)}s</td>
+        <td class="${r.isCorrect ? 'text-correct' : 'text-wrong'}">${r.isCorrect ? '✓' : '✗'}</td>
+      </tr>`;
+    });
+    ScoreStore.addScore('sqcb', { correct: totalCorrect, total: TOTAL, avgTime: avgTime.toFixed(2), extra: totalWrong });
+    document.getElementById('sqcb-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('submit-btn').onclick = submitAnswer;
+  el('play-again-btn').onclick = showStart;
+  NumPad.register('sqcb', submitAnswer);
+
+  return {
+    showStart,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden')) { if (!answered) submitAnswer(); }
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+
+// ==================== 6. MULTIPLICATION SPRINT GAME ====================
+const MxpGame = (function() {
+  const TOTAL = 10;
+  let questions = [], currentQ = 0, results = [], qStartTime = 0, timerInterval = null, answered = false, gameMode = 'easy';
+  const el = (id) => document.getElementById('mxp-' + id);
+
+  function getMode() {
+    if (document.getElementById('mxp-mode-hard').checked) return 'hard';
+    if (document.getElementById('mxp-mode-medium').checked) return 'medium';
+    return 'easy';
+  }
+
+  function genQuestion(mode) {
+    let a, b;
+    if (mode === 'easy') {
+      a = Math.floor(Math.random() * 90) + 10;   // 10–99
+      b = Math.floor(Math.random() * 8) + 2;      // 2–9
+    } else if (mode === 'medium') {
+      a = Math.floor(Math.random() * 90) + 10;   // 10–99
+      b = Math.floor(Math.random() * 90) + 10;   // 10–99
+    } else {
+      a = Math.floor(Math.random() * 900) + 100; // 100–999
+      b = Math.floor(Math.random() * 90) + 10;   // 10–99
+    }
+    return { a, b, answer: a * b };
+  }
+
+  function showStart() {
+    clearInterval(timerInterval);
+    switchView('mxp', 'start');
+    renderScorecardInto('mxp', 'mxp-start-scorecard-body');
+  }
+
+  function startGame() {
+    gameMode = getMode();
+    questions = [];
+    for (let i = 0; i < TOTAL; i++) questions.push(genQuestion(gameMode));
+    currentQ = 0;
+    results = [];
+    const modeLabel = gameMode.toUpperCase();
+    el('modeBadge').textContent = modeLabel;
+    el('modeBadge').style.color = gameMode === 'hard' ? 'var(--wrong)' : gameMode === 'medium' ? 'var(--accent)' : 'var(--correct)';
+    el('correctCount').textContent = '0';
+    el('wrongCount').textContent = '0';
+    switchView('mxp', 'game');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    const q = questions[currentQ];
+    el('num1').textContent = q.a;
+    el('num2').textContent = q.b;
+    el('qNum').textContent = currentQ + 1;
+    const inp = el('answerInput');
+    inp.value = '';
+    inp.disabled = false;
+    answered = false;
+    const fb = el('feedbackMsg');
+    fb.textContent = '';
+    fb.className = 'feedback';
+    clearInterval(timerInterval);
+    qStartTime = Date.now();
+    timerInterval = setInterval(() => {
+      el('timerDisplay').textContent = ((Date.now() - qStartTime) / 1000).toFixed(1) + 's';
+    }, 100);
+    inp.focus();
+  }
+
+  function submitAnswer() {
+    if (answered) return;
+    const inp = el('answerInput');
+    const raw = inp.value.trim();
+    if (raw === '') return;
+    answered = true;
+    clearInterval(timerInterval);
+    const elapsed = (Date.now() - qStartTime) / 1000;
+    const q = questions[currentQ];
+    const userNum = parseInt(raw, 10);
+    const isCorrect = userNum === q.answer;
+    results.push({ q: currentQ + 1, a: q.a, b: q.b, correct: q.answer, given: userNum, isCorrect, time: elapsed });
+    const fb = el('feedbackMsg');
+    fb.textContent = isCorrect ? '✓ Correct!' : `✗ Answer: ${q.answer}`;
+    fb.className = 'feedback ' + (isCorrect ? 'correct' : 'wrong');
+    el('correctCount').textContent = results.filter(r => r.isCorrect).length;
+    el('wrongCount').textContent = results.filter(r => !r.isCorrect).length;
+    currentQ++;
+    if (isCorrect) {
+      if (currentQ < TOTAL) loadQuestion(); else showResults();
+    } else {
+      inp.disabled = true;
+      setTimeout(() => {
+        inp.disabled = false;
+        if (currentQ < TOTAL) loadQuestion(); else showResults();
+      }, 600);
+    }
+  }
+
+  function showResults() {
+    switchView('mxp', 'results');
+    const totalCorrect = results.filter(r => r.isCorrect).length;
+    const times = results.map(r => r.time);
+    const avgTime = (times.reduce((a, b) => a + b, 0) / TOTAL).toFixed(2);
+    const bestTime = Math.min(...times).toFixed(2);
+    const modeLabel = gameMode.toUpperCase();
+    el('resultsTitle').textContent = totalCorrect === TOTAL ? '🎯 Perfect Score!' : totalCorrect >= 8 ? '⭐ Great Job!' : totalCorrect >= 5 ? 'Good Effort!' : 'Keep Practicing!';
+    el('modeLabel').textContent = modeLabel;
+    el('modeLabel').className = 'pill ' + (gameMode === 'hard' ? 'pill-hard' : 'pill-easy');
+    el('stat-correct').textContent = totalCorrect;
+    el('stat-wrong').textContent = TOTAL - totalCorrect;
+    el('stat-avg').textContent = avgTime + 's';
+    el('stat-best').textContent = bestTime + 's';
+    const tbody = el('resultsBody');
+    tbody.innerHTML = '';
+    results.forEach(r => {
+      tbody.innerHTML += `<tr class="${r.isCorrect ? 'row-correct' : 'row-wrong'}">
+        <td>${r.q}</td><td>${r.a} × ${r.b}</td><td>${r.given}</td><td>${r.correct}</td>
+        <td>${r.time.toFixed(2)}s</td>
+        <td class="${r.isCorrect ? 'text-correct' : 'text-wrong'}">${r.isCorrect ? '✓' : '✗'}</td>
+      </tr>`;
+    });
+    ScoreStore.addScore('mxp', { correct: totalCorrect, total: TOTAL, avgTime, extra: modeLabel });
+    document.getElementById('mxp-scorecard').classList.add('hidden');
+  }
+
+  el('start-btn').onclick = startGame;
+  el('submit-btn').onclick = submitAnswer;
+  el('play-again-btn').onclick = showStart;
+  NumPad.register('mxp', submitAnswer);
+
+  return {
+    showStart,
+    handleEnter(e) {
+      if (!el('start').classList.contains('hidden')) startGame();
+      else if (!el('game').classList.contains('hidden')) { if (!answered) submitAnswer(); }
+      else if (!el('results').classList.contains('hidden')) showStart();
+    }
+  };
+})();
+</script>
+</body>
+</html>
