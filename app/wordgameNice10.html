@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lexicon — Word Flashcard Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --card-front: #1a1a1a;
+    --card-back: #1c1610;
+    --gold: #c9a84c;
+    --gold-light: #e8cc88;
+    --gold-dim: #7a6230;
+    --text: #e8e2d5;
+    --text-muted: #7a7468;
+    --text-dim: #4a4640;
+    --border: rgba(201,168,76,0.18);
+    --radius: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .game-wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Progress */
+  .progress-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 2px;
+    background: var(--text-dim);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  /* Start screen */
+  .start-screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 48px 0;
+  }
+
+  .start-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    line-height: 1.1;
+    color: var(--text);
+  }
+
+  .start-title span {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .start-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 360px;
+  }
+
+  /* Card container & 3D flip */
+  .card-scene {
+    width: 100%;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+
+  .card-inner {
+    position: relative;
+    width: 100%;
+    min-height: 340px;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius);
+  }
+
+  .card-scene.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .card-face {
+    position: absolute;
+    width: 100%;
+    min-height: 340px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 40px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-front {
+    background: var(--card-front);
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .card-back {
+    background: var(--card-back);
+    transform: rotateY(180deg);
+    gap: 18px;
+    border-color: rgba(201,168,76,0.25);
+  }
+
+  .card-tag {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  .card-word {
+    font-family: 'Playfair Display', serif;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .card-hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .card-hint svg {
+    opacity: 0.5;
+  }
+
+  /* Back face content */
+  .back-word {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--gold-light);
+    font-style: italic;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .back-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .back-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+  }
+
+  .back-text {
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+    font-weight: 300;
+  }
+
+  .back-text em {
+    color: var(--gold-light);
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: #0e0e0e;
+  }
+
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(201,168,76,0.25);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--text-dim);
+    padding: 12px 28px;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold-light);
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+  }
+
+  /* End screen */
+  .end-screen {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 40px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+  }
+
+  .end-icon {
+    font-size: 48px;
+    line-height: 1;
+  }
+
+  .end-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 30px;
+    color: var(--text);
+  }
+
+  .end-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Mode selector */
+  .mode-label {
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 14px;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .mode-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border-radius: 10px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mode-btn .mode-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .mode-btn .mode-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    background: rgba(201,168,76,0.06);
+    transform: translateY(-1px);
+  }
+
+  .mode-btn.selected {
+    border-color: var(--gold);
+    background: rgba(201,168,76,0.1);
+    color: var(--gold);
+  }
+
+  .mode-btn.selected .mode-title {
+    color: var(--gold-light);
+  }
+
+  .mode-btn.selected .mode-sub {
+    color: var(--gold-dim);
+  }
+
+  /* Utility */
+  .hidden { display: none !important; }
+
+  /* Card number badge */
+  .card-number {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* Entrance animation */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-scene {
+    animation: slideUp 0.4s ease both;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="game-wrap">
+  <div class="header">
+    <div class="logo">Lexicon</div>
+    <div class="tagline">Expand your vocabulary, one word at a time</div>
+  </div>
+
+  <!-- Progress (hidden on start/end) -->
+  <div class="progress-area hidden" id="progressArea">
+    <div class="progress-label">
+      <span id="progressText">Word 1 of 10</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="start-screen" id="startScreen">
+    <div>
+      <div class="start-title">Build your<br><span>vocabulary</span></div>
+    </div>
+    <div class="start-desc">Flip each card to reveal its meaning, examples, and usage notes.</div>
+    <div class="mode-label">Choose a set</div>
+    <div class="mode-grid">
+      <button class="mode-btn" id="modeBtn0" onclick="selectMode(0)">
+        <span class="mode-title">Set 1</span>
+        <span class="mode-sub">Words 1 – 10</span>
+      </button>
+      <button class="mode-btn" id="modeBtn1" onclick="selectMode(1)">
+        <span class="mode-title">Set 2</span>
+        <span class="mode-sub">Words 11 – 20</span>
+      </button>
+      <button class="mode-btn" id="modeBtn2" onclick="selectMode(2)">
+        <span class="mode-title">Set 3</span>
+        <span class="mode-sub">Words 21 – 31</span>
+      </button>
+      <button class="mode-btn" id="modeBtn3" onclick="selectMode(3)">
+        <span class="mode-title">Set 4</span>
+        <span class="mode-sub">Words 32 – 41</span>
+      </button>
+      <button class="mode-btn" id="modeBtn4" onclick="selectMode(4)">
+        <span class="mode-title">Set 5</span>
+        <span class="mode-sub">Words 42 – 51</span>
+      </button>
+      <button class="mode-btn" id="modeBtn5" onclick="selectMode(5)">
+        <span class="mode-title">Set 6</span>
+        <span class="mode-sub">Words 52 – 61</span>
+      </button>
+      <button class="mode-btn" id="modeBtn6" onclick="selectMode(6)">
+        <span class="mode-title">Set 7</span>
+        <span class="mode-sub">Words 62 – 72</span>
+      </button>
+      <button class="mode-btn" id="modeBtn7" onclick="selectMode(7)">
+        <span class="mode-title">Set 8</span>
+        <span class="mode-sub">Words 73 – 82</span>
+      </button>
+      <button class="mode-btn" id="modeBtn8" onclick="selectMode(8)">
+        <span class="mode-title">Set 9</span>
+        <span class="mode-sub">Words 83 – 92</span>
+      </button>
+      <button class="mode-btn" id="modeBtn9" onclick="selectMode(9)">
+        <span class="mode-title">Set 10</span>
+        <span class="mode-sub">Words 93 – 102</span>
+      </button>
+      <button class="mode-btn" id="modeBtn10" onclick="selectMode(10)" style="grid-column: span 2;">
+        <span class="mode-title">✦ Random</span>
+        <span class="mode-sub">10 words from the full pool</span>
+      </button>
+    </div>
+    <button class="btn btn-primary" id="startBtn" onclick="startGame()" style="opacity:0.4;pointer-events:none;">Start →</button>
+  </div>
+
+  <!-- Card -->
+  <div class="card-scene hidden" id="cardScene" onclick="flipCard()">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face card-front">
+        <div class="card-number" id="cardNumber">1 / 10</div>
+        <div class="card-tag">Tap to reveal</div>
+        <div class="card-word" id="frontWord">—</div>
+        <div class="card-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Click to see the meaning
+        </div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-number" id="cardNumberBack">1 / 10</div>
+        <div class="back-word" id="backWord">—</div>
+        <div class="back-section">
+          <div class="back-label">Definition</div>
+          <div class="back-text" id="backDef"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Examples</div>
+          <div class="back-text" id="backEx"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Tone &amp; Usage</div>
+          <div class="back-text" id="backTone"></div>
+        </div>
+        <div class="back-section">
+          <div class="back-label">Related Words</div>
+          <div class="back-text" id="backRelated"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions (Next button) -->
+  <div class="actions hidden" id="actions">
+    <button class="btn btn-ghost" onclick="flipCard()" id="peekBtn">Flip</button>
+    <button class="btn btn-primary" onclick="nextWord()">Next →</button>
+  </div>
+
+  <!-- End Screen -->
+  <div class="end-screen hidden" id="endScreen">
+    <div class="end-icon">✦</div>
+    <div class="end-title">Round Complete</div>
+    <div class="end-sub" id="endSub">You've reviewed all the words.<br>Play again or choose a different set.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="btn btn-ghost" onclick="returnToMenu()">← Menu</button>
+      <button class="btn btn-primary" onclick="startGame()">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  WORD LIST — add more entries here freely
+// ─────────────────────────────────────────────
+const WORDS = [
+  {
+    word: "Enigmatic",
+    definition: "Difficult to interpret or understand; mysterious and puzzling in a way that invites curiosity. An enigmatic person or thing gives little away, leaving observers intrigued rather than informed. The word conveys a sense of depth — that something meaningful lies beneath the surface but is deliberately or naturally obscured.",
+    examples: `"The Mona Lisa's <em>enigmatic</em> smile has fascinated art lovers for centuries." / "She gave an <em>enigmatic</em> response — neither confirming nor denying the rumour."`,
+    tone: "Neutral to admiring. Used in literary, intellectual, and journalistic writing. Often applied to people (leaders, artists), texts, smiles, or historical events. Rarely used in casual speech; it carries a slightly elevated, literary register.",
+    related: "Mysterious, cryptic, inscrutable, sphinx-like, elusive, arcane."
+  },
+  {
+    word: "Allude",
+    definition: "To refer to something indirectly, without naming or describing it explicitly. When you allude to something, you hint at it, assume the listener will catch the reference, or deliberately avoid stating it plainly. It is different from 'elude' (to escape) — a very common confusion.",
+    examples: `"She <em>alluded</em> to the scandal without ever naming the politician involved." / "The poem <em>alludes</em> to the myth of Orpheus in its imagery of descent and loss."`,
+    tone: "Formal to literary. Common in academic writing, criticism, and careful prose. The noun form 'allusion' is especially frequent in literary analysis. Implies a shared cultural or intellectual knowledge between speaker and listener.",
+    related: "Hint at, suggest, imply, intimate, refer obliquely to. Noun: allusion."
+  },
+  {
+    word: "Exemplify",
+    definition: "To serve as a typical or ideal example of something; to illustrate a quality or principle through a concrete case. It can also mean to give an example of something in explanation. It implies that the example is not just relevant but representative — a stand-in for the whole category.",
+    examples: `"His career <em>exemplifies</em> the hard work and sacrifice required to reach the top." / "The graph <em>exemplifies</em> the sharp rise in urban migration after industrialisation."`,
+    tone: "Neutral to formal. Very common in academic writing, essays, and professional reports. Slightly more authoritative than 'shows' or 'illustrates.' Used both in critical praise and neutral description.",
+    related: "Illustrate, typify, embody, demonstrate, represent, epitomise."
+  },
+  {
+    word: "Salve",
+    definition: "As a noun: a healing ointment or cream applied to wounds or sores. As a verb (figurative): to soothe or ease feelings of guilt, distress, or discomfort — often one's conscience. The figurative use is very common and slightly more interesting: a 'salve to one's conscience' means an action taken mainly to make oneself feel better, not necessarily to genuinely help.",
+    examples: `"She applied a cooling <em>salve</em> to the burn." / "The charity donation was a <em>salve</em> to his conscience after years of excess." / "His apology did little to <em>salve</em> the wounded feelings."`,
+    tone: "The literal (medical) use is neutral and clinical. The figurative use is often slightly critical or ironic — implying that the 'salving' is superficial or self-serving. Common in literary and opinion writing.",
+    related: "Ointment, balm, unguent (literal); soothe, appease, ease, pacify (figurative)."
+  },
+  {
+    word: "Allegory",
+    definition: "A story, poem, image, or other work of art in which the characters and events are symbols that represent deeper moral, political, or spiritual meanings. An allegory operates on two levels simultaneously: the surface narrative and the deeper abstract meaning it encodes. Unlike a simple metaphor, an allegory is sustained throughout an entire work.",
+    examples: `"George Orwell's <em>Animal Farm</em> is a political <em>allegory</em> for the Russian Revolution." / "Plato's Allegory of the Cave uses prisoners watching shadows to represent humanity's relationship to truth and knowledge."`,
+    tone: "Academic and literary. Central to discussions of literature, art history, theology, and philosophy. Knowing the word well means also understanding its siblings: symbol, metaphor, parable, fable.",
+    related: "Parable, fable, metaphor, symbol, extended metaphor, typology."
+  },
+  {
+    word: "Mind–Body Problem",
+    definition: "A central question in philosophy of mind: how does the subjective, conscious mind relate to the physical brain and body? If the mind is non-physical (thoughts, feelings, consciousness), how can it interact with physical matter? This problem was famously articulated by Descartes, who proposed that mind and body are separate substances (dualism) — a view that created as many problems as it solved.",
+    examples: `"Neuroscience can describe neural correlates of emotion, but the <em>mind–body problem</em> asks whether those physical processes are identical to, or merely correlated with, the feeling itself." / "Philosophers like Chalmers use the term 'the hard problem of consciousness' to capture what is most difficult about the <em>mind–body problem</em>."`,
+    tone: "Strictly philosophical and academic. Used in philosophy, cognitive science, and theology. Not used casually. Often invoked when discussing consciousness, AI, free will, or personal identity.",
+    related: "Dualism, physicalism, monism, consciousness, qualia, hard problem of consciousness, Cartesian dualism."
+  },
+  {
+    word: "Cosmopolitan",
+    definition: "As an adjective: (1) familiar with and at ease in many different countries, cultures, and communities; worldly and sophisticated; (2) including or containing people from many different countries. As a noun: a cosmopolitan person. The word comes from Greek: 'kosmos' (world) + 'polites' (citizen) — literally, 'citizen of the world.'",
+    examples: `"London is one of the most <em>cosmopolitan</em> cities in the world, with over 300 languages spoken." / "She had a <em>cosmopolitan</em> upbringing, having lived in Tokyo, Paris, and Buenos Aires by the age of 16."`,
+    tone: "Generally positive and aspirational. Implies openness, cultural fluency, and sophistication. However, critics (especially from postcolonial theory) note that 'cosmopolitan' can implicitly privilege elite, mobile, Western subjects while ignoring structural inequalities.",
+    related: "Worldly, international, multicultural, global, sophisticated. Antonym: parochial, provincial."
+  },
+  {
+    word: "Cosmopolitanism",
+    definition: "A philosophical and political idea that all human beings belong to a single community, regardless of national, cultural, or religious difference. Cosmopolitanism holds that our moral obligations extend beyond our immediate group to all of humanity. There are weaker versions (we should care about all people) and stronger versions (we should support global political institutions that override national sovereignty).",
+    examples: `"Kant's <em>cosmopolitanism</em> argued for a federation of free states and universal hospitality toward foreigners." / "Critics of <em>cosmopolitanism</em> argue that it can erode the particular cultural loyalties that give life meaning."`,
+    tone: "Academic and philosophical, also used in political theory, ethics, and international relations. Can be used positively (advocating global solidarity) or critically (dismissing it as elitist or naïve).",
+    related: "Globalism, universalism, world citizenship, transnationalism. Contrast: nationalism, communitarianism, particularism."
+  },
+  {
+    word: "Rife",
+    definition: "Widespread; very common — almost always used for something undesirable. Something 'rife' is not just present but pervasive, as if it has spread unchecked. The phrase 'rife with' is extremely common: meaning full of or overrun by something negative.",
+    examples: `"The industry was <em>rife</em> with corruption." / "Social media is <em>rife with</em> misinformation." / "The manuscript was <em>rife with</em> errors — nearly every paragraph needed correction."`,
+    tone: "Negative connotation almost always. Journalistic, critical, and conversational. Rarely used for positive things — you would not say 'rife with kindness.' Using it for something positive would sound ironic or sarcastic.",
+    related: "Rampant, widespread, pervasive, prevalent, epidemic, ubiquitous (though 'ubiquitous' is neutral). Antonym: rare, uncommon."
+  },
+  {
+    word: "Orientalist / Orientalism",
+    definition: "<em>Orientalism</em> (the concept): A framework of analysis developed by scholar Edward Said (1978) describing how Western cultures have historically constructed a distorted, essentialised, and often romanticised image of 'the East' (the Middle East, Asia, North Africa). This representation served to justify colonialism by depicting Eastern peoples as exotic, irrational, backward, and in need of Western governance. An <em>orientalist</em> is someone who studies or perpetuates this worldview.",
+    examples: `"Said argued that 19th-century novels and paintings were not neutral depictions of the East but <em>orientalist</em> texts that reinforced colonial power structures." / "The film's portrayal of Middle Eastern characters was criticised as <em>orientalist</em> — reducing a diverse region to a backdrop of danger and exoticism."`,
+    tone: "Critical and academic. Widely used in postcolonial studies, cultural criticism, literary theory, and media studies. Calling something 'orientalist' is almost always a critique — it accuses a representation of being reductive, ideologically biased, and complicit in power structures.",
+    related: "Postcolonialism, Said, othering, exoticism, stereotyping, essentialism, the 'Other'."
+  },
+  {
+    word: "Ambivalent",
+    definition: "Having mixed, contradictory, or uncertain feelings about something or someone at the same time. Ambivalence is not indifference — it is the presence of two opposing emotions simultaneously (e.g., love and resentment, excitement and fear). It is a more precise and psychologically rich word than 'unsure' or 'mixed feelings.'",
+    examples: `"She felt deeply <em>ambivalent</em> about leaving her hometown — thrilled by the opportunity but grieving the loss." / "He had an <em>ambivalent</em> relationship with fame: he craved recognition but hated the scrutiny."`,
+    tone: "Neutral to introspective. Common in psychological, literary, and personal contexts. More sophisticated than saying 'I have mixed feelings.' Frequently used in literary criticism to describe a character's complex inner state.",
+    related: "Conflicted, torn, equivocal, undecided, of two minds. Noun: ambivalence. Antonym: unambiguous, wholehearted."
+  },
+  {
+    word: "Determinism",
+    definition: "The philosophical view that every event, including every human thought and action, is causally determined by prior events and natural laws. If determinism is true, given the state of the universe at any moment, only one future is possible. This has profound implications for free will: if all actions are the inevitable result of prior causes, in what sense can anyone be said to choose freely?",
+    examples: `"Hard <em>determinism</em> holds that free will is an illusion — our choices are just the product of brain chemistry and prior history." / "Some argue that quantum indeterminacy undermines <em>determinism</em> at the physical level."`,
+    tone: "Philosophical and academic. Used in philosophy, cognitive science, theology, and increasingly in discussions of AI and law (e.g., can a criminal be blamed if their actions were determined?). Often contrasted with free will, indeterminism, or compatibilism.",
+    related: "Causation, fatalism, hard determinism, compatibilism, free will, necessity. Antonym: indeterminism, libertarian free will."
+  },
+  {
+    word: "Contingency",
+    definition: "The quality of being possible but not certain; dependence on circumstances that could have been otherwise. A contingent fact is one that happens to be true but could have been false — it is not necessary. In philosophy, contingency is contrasted with necessity. In planning, a contingency is a provision for something that might happen. Both senses revolve around the idea of 'what might have been otherwise.'",
+    examples: `"The <em>contingency</em> of history — the fact that things could always have unfolded differently — is a central theme of counterfactual history." / "The project budget included a 15% <em>contingency</em> for unforeseen costs."`,
+    tone: "The philosophical sense is academic and abstract. The planning sense is professional and practical. Both are formal. Understanding the philosophical sense greatly enriches engagement with history, ethics, and social theory.",
+    related: "Possibility, uncertainty, chance, accident, fortune (philosophical); backup plan, provision, reserve (practical). Antonym: necessity, inevitability."
+  },
+  {
+    word: "Warranted",
+    definition: "Justified; having a good reason or sufficient grounds. When an action, belief, or response is warranted, it is appropriate given the circumstances — there is legitimate reason for it. The opposite, 'unwarranted,' means without justification, excessive, or uncalled-for.",
+    examples: `"Given the evidence, her caution was entirely <em>warranted</em>." / "The criticism, while harsh, was not entirely <em>unwarranted</em>." / "Is the level of public anxiety about this issue <em>warranted</em> by the actual data?"`,
+    tone: "Neutral to formal. Used in legal, academic, journalistic, and professional contexts. Often used to evaluate the proportionality or legitimacy of a response or belief. A very useful analytical word.",
+    related: "Justified, merited, deserved, appropriate, defensible. Antonym: unwarranted, unjustified, gratuitous."
+  },
+  {
+    word: "Indignant",
+    definition: "Feeling or expressing strong displeasure at something considered unjust, unfair, or insulting. Indignation is more charged than mere annoyance — it carries a sense of moral outrage, the feeling that something wrong has been done to oneself or others. It implies the person believes they or others deserve better.",
+    examples: `"She was <em>indignant</em> at being accused of dishonesty without any evidence." / "The workers were <em>indignant</em> that their years of service had been dismissed with a form letter."`,
+    tone: "Emotionally charged but dignified — implies the person feels their outrage is justified. Common in narrative writing, reported speech, and opinion pieces. Less hysterical than 'furious,' more principled than 'annoyed.'",
+    related: "Outraged, aggrieved, affronted, offended, scandalised. Noun: indignation. Antonym: pleased, accepting, resigned."
+  },
+  {
+    word: "Facetious",
+    definition: "Treating serious issues with inappropriate humour or flippancy; not meant to be taken seriously, often to an annoying degree. A facetious remark is one that trivialises something or deflects with a joke when seriousness is called for. It is similar to 'flippant' but often implies a deliberate (and irritating) attempt at wit.",
+    examples: `"Stop being <em>facetious</em> — this is a genuinely difficult situation." / "'Oh yes, I'm sure it was all Napoleon's fault,' he said, in an obviously <em>facetious</em> tone."`,
+    tone: "Often used critically, implying disapproval of the person's levity. However, can be used self-deprecatingly: 'I'm being facetious, of course.' Belongs to a slightly elevated register — more precise than 'jokey' or 'sarcastic.'",
+    related: "Flippant, glib, tongue-in-cheek, sardonic, jesting, frivolous. Antonym: earnest, sincere, serious."
+  },
+  {
+    word: "Eclectic",
+    definition: "Deriving ideas, styles, or elements from a broad and diverse range of sources, rather than following a single system or tradition. An eclectic person, collection, or approach does not commit to one school of thought but draws freely from many. It implies openness and variety, though occasionally implies a lack of coherence.",
+    examples: `"Her musical taste is wildly <em>eclectic</em> — from Baroque counterpoint to Detroit techno." / "The café had an <em>eclectic</em> décor: vintage maps, neon signs, and antique furniture side by side."`,
+    tone: "Usually positive or neutral — suggesting breadth and openness. Can be subtly critical if it implies inconsistency or lack of rigour ('the book is <em>eclectic</em> to the point of confusion'). Common in art, music, design, philosophy, and food writing.",
+    related: "Diverse, varied, wide-ranging, heterogeneous, broad, syncretic. Antonym: narrow, uniform, orthodox, purist."
+  },
+  {
+    word: "Predispose",
+    definition: "To make someone inclined or susceptible to something in advance — before the fact. A predisposition is a pre-existing tendency, whether biological, psychological, or circumstantial, that makes a certain outcome more likely. It does not determine the outcome but tilts the odds.",
+    examples: `"Growing up in a musical household <em>predisposed</em> her to pursue a career in composition." / "Certain genetic factors can <em>predispose</em> individuals to developing anxiety disorders." / "His early experiences with failure had <em>predisposed</em> him to distrust institutions."`,
+    tone: "Neutral to clinical. Very common in psychology, medicine, sociology, and literary analysis. Useful for describing background conditions without implying strict determinism — it acknowledges agency while noting prior influence.",
+    related: "Incline, dispose, make susceptible, bias, prime. Noun: predisposition."
+  },
+  {
+    word: "Unsolicited",
+    definition: "Not asked for; given or offered without being requested. Unsolicited things are often unwelcome precisely because they were not invited — they presume a relationship or interest that may not exist. The word is most commonly used with 'advice' or 'feedback,' which people often resent when it comes uninvited.",
+    examples: `"She bristled at his <em>unsolicited</em> advice about her career choices." / "The firm received hundreds of <em>unsolicited</em> applications." / "He was known for offering <em>unsolicited</em> opinions on everything from politics to interior design."`,
+    tone: "Often mildly negative, implying the unwelcomeness of the thing given. Formal to neutral. Very common in professional, legal (unsolicited emails/spam), and social contexts.",
+    related: "Uninvited, unrequested, unwanted, volunteered, gratuitous. Antonym: solicited, requested, invited."
+  },
+  {
+    word: "Glut and Famine",
+    definition: "A recurring economic pattern (often called the 'feast and famine cycle' in industries) where periods of overabundance (glut) — too much supply, falling prices, overcapacity — are followed by periods of severe shortage (famine) — undersupply, price spikes, and scarcity. The cycle is driven by overreaction: producers flood a market during good times, driving prices down; many exit the market during bad times, creating the next shortage.",
+    examples: `"The oil industry is notorious for its cycles of <em>glut and famine</em>: a price spike encourages overproduction, the market floods, prices crash, investment dries up, and eventually scarcity returns." / "Freelance writers often speak of <em>glut and famine</em> — a rush of commissions one month and nothing the next."`,
+    tone: "Used in economics, business journalism, agriculture, and informal professional talk. The phrase can be literal (food supply) or metaphorical (workflow, attention, money). It vividly captures the oscillating nature of supply-demand imbalances.",
+    related: "Boom and bust, feast and famine, oversupply/undersupply, commodity cycle, overcapacity, scarcity."
+  },
+  {
+    word: "Bullwhip Effect",
+    definition: "A supply chain phenomenon in which small fluctuations in consumer demand lead to increasingly large swings in demand and inventory levels as you move further up the supply chain (from retailer → wholesaler → distributor → manufacturer). Like the crack of a bullwhip, a small movement at the handle (consumer) creates a dramatic, amplified wave at the tip (supplier). It was formally identified by Jay Forrester and named by Hau Lee.",
+    examples: `"During the pandemic, a modest increase in demand for toilet paper was amplified by the <em>bullwhip effect</em> into a massive production surge that led to shortages." / "Companies now use real-time data sharing to reduce the <em>bullwhip effect</em> across their supply chains."`,
+    tone: "Business, logistics, and supply chain management vocabulary. Primarily academic and professional. Understanding this term is essential in operations management, economics, and business strategy. It is a very concrete and memorable metaphor.",
+    related: "Supply chain volatility, demand amplification, Forrester effect, inventory oscillation, supply chain disruption."
+  },
+  {
+    word: "Tailwinds",
+    definition: "Forces or conditions that help or accelerate progress — external factors working in your favour. Borrowed from aviation (a wind blowing in the same direction as travel, increasing speed), 'tailwinds' is now standard in business, economics, and finance to describe favourable market conditions, trends, or circumstances that support growth without requiring additional effort.",
+    examples: `"The company benefited from strong <em>tailwinds</em>: a growing middle class, low interest rates, and a shift toward digital payments." / "Renewable energy firms are riding demographic and policy <em>tailwinds</em> as governments accelerate the energy transition."`,
+    tone: "Business, finance, and economics vocabulary. Used by analysts, investors, CEOs, and journalists. Almost always positive — if conditions are working against you, the term is 'headwinds.' Knowing both words together makes you fluent in the language of strategic analysis.",
+    related: "Favourable conditions, momentum, catalyst, enabler. Antonym: headwinds."
+  },
+  {
+    word: "Headwinds",
+    definition: "Forces or conditions that slow progress or create resistance — external factors working against you. The aviation metaphor is direct: a headwind blows against the direction of travel, requiring more effort and reducing speed. In business and economics, headwinds are structural or environmental challenges that make growth harder, regardless of a company's or individual's effort.",
+    examples: `"The retailer faces significant <em>headwinds</em>: rising costs, declining foot traffic, and increasing competition from online rivals." / "Emerging markets are encountering demographic and debt <em>headwinds</em> that will constrain growth for the next decade."`,
+    tone: "Business, finance, and economics vocabulary. Commonly used in earnings calls, analyst reports, and economic commentary. Often paired with 'tailwinds' for balance. Implies the difficulty is external and structural, not necessarily a failure of management.",
+    related: "Obstacles, resistance, constraints, challenges, adverse conditions. Antonym: tailwinds."
+  },
+  {
+    word: "Statute",
+    definition: "A written law formally enacted by a legislative body (such as a parliament or congress). Statutes are the primary form of codified law — they are deliberate, recorded, and enforceable. A statute differs from common law (which is judge-made) and from regulations (which are rules made by government agencies under authority granted by statute).",
+    examples: `"The <em>statute</em> clearly prohibited discrimination on the grounds of religion." / "Under the <em>statute</em> of limitations, the prosecution could no longer bring charges." / "Parliament passed a <em>statute</em> reforming the pension system."`,
+    tone: "Legal and formal. Used in law, politics, and public administration. Understanding the word 'statute' is fundamental to legal literacy — much legal argument hinges on the interpretation of statutes. Distinct from 'statute' (law) and 'stature' (height or standing) — two very different words.",
+    related: "Law, act, legislation, ordinance, enactment, code. Related forms: statutory (adjective)."
+  },
+  {
+    word: "Statutory",
+    definition: "Relating to, required by, or created by statute (written law). If something is 'statutory,' it exists because the law mandates or defines it — as opposed to being voluntary, customary, or contractual. Statutory rights are rights you have by law, regardless of any agreement to the contrary.",
+    examples: `"Employees are entitled to <em>statutory</em> maternity leave, regardless of what their contract says." / "The regulator carried out its <em>statutory</em> duty to investigate the complaint." / "There is a <em>statutory</em> minimum wage that no employer can legally undercut."`,
+    tone: "Legal, regulatory, and administrative. Very common in employment law, consumer rights, and public policy. Using 'statutory' signals precision — it means grounded in legislation, not merely customary or assumed. Often contrasted with 'contractual' or 'voluntary.'",
+    related: "Legal, legislated, codified, mandated, prescribed. Noun: statute. Antonym: voluntary, contractual, discretionary."
+  },
+  {
+    word: "Illicitly",
+    definition: "In a way that is forbidden by law, rules, or accepted norms; illegally or unlawfully. The adverb form of 'illicit,' it describes the manner in which something prohibited is done — often with a suggestion of secrecy, transgression, or moral disapproval beyond mere illegality. The word carries a slightly stronger moral charge than 'illegally,' often implying a violation of both law and social convention.",
+    examples: `"The funds had been <em>illicitly</em> transferred to offshore accounts over several years." / "She had <em>illicitly</em> obtained a copy of the exam paper before the test."`,
+    tone: "Formal and critical. Used in journalism, legal writing, and academic contexts. Implies wrongdoing and often secrecy. More literary and precise than 'illegally' — choose it when you want to convey both legal and moral transgression.",
+    related: "Illegally, unlawfully, improperly, surreptitiously, covertly. Adjective: illicit. Antonym: licitly, lawfully, legitimately."
+  },
+  {
+    word: "Elicit",
+    definition: "To draw out or provoke a response, reaction, feeling, or piece of information from someone — typically through skill, questioning, or stimulus. You elicit something latent or hidden: a confession, a smile, an emotion, an answer. It is an active verb: someone deliberately or effectively causes something to emerge from another person or situation.",
+    examples: `"The therapist used open-ended questions to <em>elicit</em> more detailed responses from the patient." / "The comedian's routine failed to <em>elicit</em> much laughter from the reserved crowd." / "The survey was designed to <em>elicit</em> honest opinions rather than socially acceptable answers."`,
+    tone: "Neutral to formal. Common in psychology, journalism, education, and research. Not to be confused with 'illicit' (forbidden) — one of the most common spelling errors in English. 'Elicit' is a verb; 'illicit' is an adjective.",
+    related: "Draw out, provoke, prompt, evoke, extract, induce. Antonym: suppress, stifle, withhold."
+  },
+  {
+    word: "Crimson",
+    definition: "A deep, rich red colour — darker and slightly more bluish than scarlet, associated with blood, passion, danger, royalty, and shame. The word carries strong symbolic and emotional weight beyond mere colour description. It appears frequently in literary and poetic writing to evoke intensity of feeling, violence, or grandeur.",
+    examples: `"The sky turned <em>crimson</em> at sunset, staining the horizon like a wound." / "His face flushed <em>crimson</em> with embarrassment." / "The <em>crimson</em> robes of the cardinals filled the cathedral."`,
+    tone: "Literary and vivid. Used in poetry, narrative fiction, and descriptive writing. More evocative and weighted than simply saying 'red' or 'dark red.' Carries associations with blood, war, royalty, and shame across many literary and cultural traditions.",
+    related: "Scarlet, ruby, vermillion, blood-red, carmine, burgundy."
+  },
+  {
+    word: "Haul",
+    definition: "As a verb: to pull or drag something heavy with sustained effort; to transport over a distance. As a noun: (1) the act of pulling; (2) a distance to be covered ('a long haul'); (3) a quantity of something obtained, especially as a catch or a prize ('a haul of fish'; 'a haul of stolen goods'). The word implies effort, quantity, or distance.",
+    examples: `"The fishermen <em>hauled</em> in their nets, heavy with the morning's catch." / "It's a long <em>haul</em> from London to Sydney." / "Police seized a significant <em>haul</em> of counterfeit goods at the port."`,
+    tone: "Neutral to informal. The physical sense (pulling, transporting) is common in everyday and maritime language. 'Long haul' is an established idiom for something requiring sustained effort or time. The noun sense of 'haul' as a prize or seizure appears frequently in journalism.",
+    related: "Drag, heave, lug, cart, tow (verb); catch, seizure, load, yield (noun). Idiom: 'long haul' (sustained effort or journey)."
+  },
+  {
+    word: "Multitude",
+    definition: "A very large number of people or things; a crowd or great quantity. More formal and literary than 'many' or 'a lot,' 'multitude' conveys both scale and a degree of diversity or complexity. The phrase 'a multitude of' is especially useful in formal writing. Biblical associations give it additional resonance.",
+    examples: `"A <em>multitude</em> of factors contributed to the company's collapse." / "She stood before the <em>multitude</em> and delivered a speech that would become legendary." / "The project faces a <em>multitude</em> of logistical challenges."`,
+    tone: "Formal to literary. Elevated above 'many' or 'lots of.' Common in academic, biblical, rhetorical, and journalistic writing. 'A multitude of' is a very useful phrase in formal essays when you want to convey that many varied causes or elements are at play.",
+    related: "Crowd, throng, mass, host, myriad, array, profusion. Idiom: 'covers a multitude of sins' (conceals many faults)."
+  },
+  {
+    word: "Condescend",
+    definition: "To behave in a way that shows you consider yourself superior to others; to patronise. To condescend is to stoop (or appear to stoop) to the level of those you consider beneath you — but in a way that makes that superiority obvious and often offensive. The word can also have an older, neutral sense of graciously lowering oneself to be helpful, but the critical sense now dominates.",
+    examples: `"He had a habit of <em>condescending</em> to his colleagues, explaining basic concepts as if they were children." / "She didn't mean to <em>condescend</em>, but her tone made it clear she thought the question beneath her."`,
+    tone: "Critical. Using this word about someone is an accusation — it signals that their manner is arrogant and belittling. Common in social and workplace commentary. Related forms are widely used: 'condescending' (adjective), 'condescension' (noun).",
+    related: "Patronise, talk down to, look down on, belittle. Adjective: condescending. Noun: condescension."
+  },
+  {
+    word: "Condescending tone",
+    definition: "A manner of speaking or writing that implies the speaker considers themselves superior to the audience — communicating as though the listener is less intelligent, experienced, or capable than they are. A condescending tone is often recognisable through over-explanation of simple things, an air of patient sufferance, or subtle dismissiveness. It is distinct from the content of what is said — it is entirely about how it is said.",
+    examples: `"His instructions were technically accurate, but the <em>condescending tone</em> alienated the entire team." / "'I'll explain this slowly so everyone can follow,' she said — the <em>condescending tone</em> unmistakable."`,
+    tone: "Used in interpersonal, professional, and social commentary. Identifying a condescending tone is a key communication skill. It is closely related to — and often synonymous with — a patronising tone, though 'condescending' is perhaps slightly more about superiority, while 'patronising' adds a flavour of misplaced benevolence.",
+    related: "Patronising, dismissive, belittling, superior, haughty, disdainful. See also: condescend, patronise."
+  },
+  {
+    word: "Patronizing",
+    definition: "Treating someone as though they are less intelligent, capable, or informed than they actually are — offering help or explanation in a way that is unnecessarily simplistic or implies low expectations. A patronising attitude combines superficial kindness with a subtle but unmistakable assumption of superiority. It is often unintentional, which makes it particularly difficult to address.",
+    examples: `"His <em>patronizing</em> manner when explaining the new system irritated colleagues who had worked there for years." / "Offering unsolicited advice about how to raise her children struck her as deeply <em>patronizing</em>."`,
+    tone: "Critical. To call someone patronising is an accusation of arrogance disguised as helpfulness. Very common in workplace dynamics, gender relations, and intergenerational interactions. In British English, often spelled 'patronising'; in American English, 'patronizing.'",
+    related: "Condescending, paternalistic, demeaning, belittling, superior. Verb: patronise/patronize."
+  },
+  {
+    word: "Apprehensively",
+    definition: "In a manner showing anxiety or nervousness about a future event; with a sense of dread or worried anticipation. Apprehension is fear of what is to come — not the thing itself, but the anticipation of it. Acting apprehensively means proceeding while carrying that low-level anxiety.",
+    examples: `"She <em>apprehensively</em> opened the envelope containing her exam results." / "He glanced <em>apprehensively</em> at the darkening sky as the first rumble of thunder sounded." / "The team waited <em>apprehensively</em> for the board's decision."`,
+    tone: "Narrative and descriptive. Common in fiction to show a character's inner state through their actions. Suggests forward movement despite anxiety — it is not paralysis but cautious, nervous action. More precise and literary than 'nervously' or 'anxiously.'",
+    related: "Nervously, anxiously, uneasily, fearfully, with trepidation. Adjective: apprehensive. Noun: apprehension."
+  },
+  {
+    word: "Trot",
+    definition: "As a verb: to move at a pace between walking and running — a steady, moderate jog. Often used of horses, but also of people moving briskly without full running. As a noun: the gait itself. Figuratively, 'to trot out' something means to produce or repeat it in a routine, unthinking way — often used with mild criticism ('trotting out the same old excuses').",
+    examples: `"The children <em>trotted</em> ahead of their parents, eager to reach the playground." / "She <em>trotted</em> down the stairs to answer the door." / "The minister <em>trotted out</em> the familiar statistics, to the journalists' visible impatience."`,
+    tone: "The physical sense is neutral and vivid — useful in fiction for conveying quick, light movement. The figurative 'trot out' carries a mildly negative tone, implying repetition without freshness. Common in narrative writing, equestrian contexts, and journalistic commentary.",
+    related: "Jog, canter, scurry, bustle (movement); repeat, rehearse, produce routinely (figurative). Idiom: 'trot out' — to produce something repeatedly and unimaginatively."
+  },
+  {
+    word: "Seceded",
+    definition: "Past tense of 'secede': to formally withdraw from a political union, federation, or organisation. Secession is an act of deliberate political separation — a group or territory declaring itself no longer bound to the larger entity it was part of. Most famously associated with the American Civil War (the Confederate states seceding from the Union) and ongoing debates about independence movements worldwide.",
+    examples: `"The southern states <em>seceded</em> from the Union in 1860–61, triggering the American Civil War." / "The region <em>seceded</em> following a disputed referendum that the central government refused to recognise."`,
+    tone: "Political and historical. Used in discussions of independence, nationalism, federalism, and civil conflict. Secession is politically contentious — whether it is legitimate depends heavily on perspective. The word itself is neutral, but its application rarely is.",
+    related: "Withdrew, separated, broke away, split from, declared independence. Noun: secession. Related: secessionist, breakaway, independence movement."
+  },
+  {
+    word: "Dreary",
+    definition: "Dull, bleak, and lacking in brightness or interest — both literally (of weather, places, or light) and figuratively (of experiences, routines, or people). Something dreary is not just unpleasant but numbing and grey — it drains energy and spirit without necessarily provoking strong emotion. It implies monotony and a certain hopelessness.",
+    examples: `"It was a <em>dreary</em> November afternoon — low clouds, drizzle, and not a soul on the streets." / "She found the administrative work unbearably <em>dreary</em> after the creative freedom of her previous role." / "The town had a <em>dreary</em>, forgotten quality, as if life had moved on and left it behind."`,
+    tone: "Literary and descriptive. Very useful in fiction for setting atmosphere — a 'dreary' landscape immediately conveys bleakness, loneliness, or gloom. Associated strongly with Victorian literature and Gothic writing. Slightly more resonant than 'dull' or 'gloomy' — it evokes sustained, pervasive greyness.",
+    related: "Bleak, gloomy, dismal, drab, cheerless, grey, monotonous. Antonym: vibrant, bright, lively, cheerful."
+  },
+  {
+    word: "Entail",
+    definition: "To involve, require, or make something necessary as a consequence or result. When you say something 'entails' something else, you mean the first thing logically or practically brings the second along with it — it is part of what it means or requires. In law, 'entail' also has a specific historical sense: to settle an estate so that it cannot be left freely but must pass to a designated heir.",
+    examples: `"Starting a business <em>entails</em> accepting a degree of financial risk." / "The new role would <em>entail</em> significant travel and a steep learning curve." / "She asked what accepting the offer would <em>entail</em> in practice."`,
+    tone: "Neutral and formal. Very common in professional, academic, and contractual writing. Slightly more precise than 'involve' — 'entail' suggests logical necessity rather than mere inclusion. Excellent for formal emails and essays: 'this decision entails the following consequences.'",
+    related: "Involve, require, necessitate, imply, mean, carry with it. The legal/historical sense: settlement, inheritance, land law."
+  },
+  {
+    word: "Mortification",
+    definition: "Intense embarrassment or shame; the feeling of being deeply humiliated. To be mortified is to wish the ground would swallow you. The word comes from Latin 'mors' (death) — originally it meant subduing the flesh through religious discipline, but in modern English it almost always refers to acute social embarrassment. It is a strong, literary word for humiliation.",
+    examples: `"To her <em>mortification</em>, she realised she had been pronouncing the word incorrectly for years." / "The <em>mortification</em> of having her private letters read aloud in court was almost unbearable."`,
+    tone: "Emphatic and often literary. More intense and more elegantly expressed than 'embarrassment.' Common in narrative fiction, especially in social comedies and period dramas. Using it in conversation has a slightly theatrical quality — which can be intentional and charming.",
+    related: "Humiliation, embarrassment, shame, chagrin, indignity. Verb: mortify. Adjective: mortified, mortifying."
+  },
+  {
+    word: "Vexation",
+    definition: "A feeling of irritation, frustration, or annoyance — particularly from something trivial, persistent, or difficult to resolve. Vexation sits between mild annoyance and genuine anger: it is the feeling of being agitated by something that perhaps should not matter so much, but does. It often carries a sense of helplessness — one is vexed by things one cannot easily fix.",
+    examples: `"She concealed her <em>vexation</em> behind a polite smile as the meeting dragged past the hour." / "'A source of endless <em>vexation</em>,' he muttered, staring at the report that refused to balance." / "The <em>vexations</em> of daily bureaucracy wore him down over time."`,
+    tone: "Formal and literary, with a slightly old-fashioned flavour that can feel elegant or ironic. Common in 19th-century literature and still very effective in modern writing for conveying contained, civilised irritation. 'Vexed' as an adjective is also common: 'a vexed question' means a persistently difficult or contentious issue.",
+    related: "Irritation, annoyance, frustration, exasperation, chagrin. Verb: vex. Adjective: vexed ('a vexed question'). Antonym: equanimity, contentment."
+  },
+  {
+    word: "Sojourn",
+    definition: "A temporary stay in a place; a period of residence somewhere for a limited time. As a noun, it suggests a meaningful or considered visit — not passing through, but staying for a while before moving on. As a verb (less common): to stay temporarily. The word has a slightly elevated, literary quality that distinguishes it from 'stay' or 'visit.'",
+    examples: `"After her <em>sojourn</em> in Paris, she returned home with a changed perspective and impeccable French." / "The monks spent a season of <em>sojourn</em> in the desert before returning to the monastery." / "His brief <em>sojourn</em> in the countryside proved more restorative than years of city therapy."`,
+    tone: "Literary and slightly formal. More evocative than 'stay' or 'visit' — it implies the stay was meaningful, reflective, or part of a larger journey. Common in travel writing, historical fiction, and religious or philosophical contexts. Using it in ordinary speech has an intentionally elevated, even playful quality.",
+    related: "Stay, visit, stopover, interlude, residency, retreat. Verb: to sojourn."
+  },
+  {
+    word: "Wit",
+    definition: "The capacity for clever, swift, and amusing expression — the ability to say the right surprising thing at the right moment. Wit is intelligence made entertaining: it combines sharp observation with speed and economy of language. It differs from humour in that it is always pointed and intelligent, and from wisdom in that it is playful rather than earnest. A person described as having 'wit' is quick, perceptive, and pleasingly unpredictable in conversation.",
+    examples: `"Her <em>wit</em> was so dry that newcomers often missed the joke entirely." / "He relied on <em>wit</em> where others relied on charm, and it served him just as well." / "The essay sparkled with <em>wit</em>, making an otherwise dry subject genuinely enjoyable."`,
+    tone: "Admiring and positive when used as a noun describing a quality. 'Witty' is the adjective. The word carries associations with intelligence, social elegance, and verbal dexterity. Historically, 'wit' also meant general intelligence or mental faculty (as in 'keep your wits about you'), and this older sense still surfaces in idioms.",
+    related: "Humour, cleverness, sharpness, repartee, banter, acuity. Idioms: 'at one's wit's end,' 'keep one's wits about one.' Adjective: witty. Antonym: dullness, plodding humour."
+  },
+  {
+    word: "Surly",
+    definition: "Bad-tempered, unfriendly, and rudely uncooperative — particularly in a sullen, growling way rather than an explosive one. A surly person does not necessarily shout; they grunt, glower, and withhold basic civility. The word suggests a habitual rather than momentary disposition: someone described as surly tends to be that way consistently, especially toward people they consider beneath them or an imposition on their time.",
+    examples: `"The <em>surly</em> clerk barely looked up when she approached the counter." / "He received a <em>surly</em> reply from the porter, who clearly resented being asked for directions." / "Years of working nights had left him <em>surly</em> and uncommunicative before noon."`,
+    tone: "Mildly negative and descriptive. More vivid than 'rude' or 'unfriendly' — it captures a specific flavour of bad temper: heavy, ungracious, and slightly animal. Common in fiction for minor antagonists or background characters. Using it in real life is a clear signal of displeasure, but not harshly insulting.",
+    related: "Gruff, sullen, churlish, brusque, ungracious, ill-tempered, curt. Antonym: affable, genial, courteous."
+  },
+  {
+    word: "Feeble",
+    definition: "Lacking strength, force, or effectiveness — whether physically, mentally, or morally. A feeble person is weak and frail; a feeble argument fails to convince; a feeble attempt barely registers. The word often carries a note of disappointment or contempt — one does not just describe something as feeble, one implies it ought to have been stronger. It can refer to the body, the mind, or the will.",
+    examples: `"He made a <em>feeble</em> attempt to lift the box before admitting he needed help." / "Her <em>feeble</em> excuses convinced no one in the room." / "The old man's voice had grown <em>feeble</em> with age, barely audible from across the table."`,
+    tone: "Negative and often slightly dismissive. When applied to people physically, it conveys vulnerability or decline; when applied to arguments, efforts, or excuses, it implies inadequacy and a failure to meet reasonable expectations. Can be used with sympathy (a feeble old man) or with sharp criticism (a feeble response).",
+    related: "Weak, frail, ineffectual, flimsy, inadequate, faint, enfeebled. Antonym: robust, forceful, vigorous, convincing."
+  },
+  {
+    word: "Godsend",
+    definition: "Something or someone that arrives at exactly the right moment to help — so timely and welcome that it seems almost divinely arranged. A godsend is not just useful; it is unexpectedly and profoundly helpful at a moment of need. The word retains the warmth of genuine relief and gratitude, even when used in entirely secular contexts.",
+    examples: `"The extra funding was a <em>godsend</em> for a project that had been struggling for months." / "She described the support group as a <em>godsend</em> during the hardest period of her life." / "A last-minute cancellation freed up the venue — a genuine <em>godsend</em> for the organisers."`,
+    tone: "Warmly positive and grateful. Implies not just usefulness but timely rescue or relief. Slightly informal and colloquial in modern usage, though the feeling behind it is often genuine and strong. Works well in speech and writing when you want to convey heartfelt appreciation for something that arrived in the nick of time.",
+    related: "Blessing, windfall, lifesaver, stroke of luck, boon. Antonym: curse, misfortune, burden."
+  },
+  {
+    word: "Odious",
+    definition: "Extremely unpleasant, offensive, or deserving of strong dislike — morally or aesthetically repugnant. Something odious does not merely irritate; it provokes genuine aversion or moral revulsion. The word is stronger than 'unpleasant' or 'objectionable' and carries a tone of firm moral or aesthetic condemnation. It can be applied to people, behaviour, tasks, or ideas.",
+    examples: `"She found the task of reviewing the accounts <em>odious</em> but unavoidable." / "His behaviour at the dinner was <em>odious</em> — rude, boastful, and cruel." / "The pamphlet contained some of the most <em>odious</em> rhetoric she had ever read."`,
+    tone: "Strongly negative and rather formal or literary. Using 'odious' instead of 'awful' or 'horrible' elevates the register and sharpens the condemnation. It is a confident, decisive word — the speaker is not expressing mild displeasure but clear repugnance. The phrase 'odious comparisons' (from the proverb 'comparisons are odious') is a common fixed expression.",
+    related: "Repugnant, revolting, abhorrent, loathsome, detestable, contemptible. Antonym: delightful, admirable, appealing."
+  },
+  {
+    word: "Hasten",
+    definition: "To move or act quickly; to cause something to happen sooner than it otherwise would. To hasten is to hurry with purpose — it implies urgency and deliberate speed. Used transitively, it means to accelerate an event or process: to hasten someone's departure, to hasten the end of something. Used intransitively, it means to go quickly: she hastened down the corridor.",
+    examples: `"He <em>hastened</em> to reassure her before she could draw the wrong conclusion." / "The scandal only <em>hastened</em> his resignation, which had seemed inevitable for weeks." / "She <em>hastened</em> back to the office, aware that the meeting had already begun."`,
+    tone: "Slightly formal and literary, but not archaic. More purposeful than 'hurry' — it suggests urgency and deliberate action rather than mere haste. Very effective in narrative writing for conveying brisk, purposeful movement. The phrase 'hasten to add' is a useful construction for softening or qualifying a statement immediately after making it.",
+    related: "Hurry, rush, accelerate, expedite, quicken, speed up. Antonym: delay, slow, impede, linger."
+  },
+  {
+    word: "Scruples",
+    definition: "Moral reservations or doubts that prevent someone from doing something that feels ethically wrong — even when it might be convenient or advantageous to proceed. To have scruples is to be governed by conscience. The word usually appears in contexts where someone hesitates before an action that others might not think twice about, or where a person is notably resistant to cutting ethical corners.",
+    examples: `"She had no <em>scruples</em> about reporting her colleague's misconduct to management." / "He was widely considered effective, if not entirely troubled by <em>scruples</em>." / "Her <em>scruples</em> about the contract's fine print delayed the signing by three weeks."`,
+    tone: "Neutral to slightly admiring when used positively; slightly ironic or critical when noting their absence ('he had no scruples'). A person described as 'having scruples' is conscientious; one described as 'unscrupulous' is morally unrestrained. The word implies that the scruple is genuine and personal — not just rule-following but inner moral resistance.",
+    related: "Qualms, misgivings, reservations, moral doubts, conscience. Adjective: scrupulous (meticulous, principled), unscrupulous (dishonest, without moral restraint)."
+  },
+  {
+    word: "Propriety",
+    definition: "Conformity to what is considered correct, appropriate, or socially acceptable behaviour — particularly in conduct and manners. Propriety is not just politeness but adherence to an understood standard of what is fitting for a given context: the right behaviour in the right place at the right time. It implies an awareness of how one is seen and a deliberate effort to meet those expectations.",
+    examples: `"She maintained her composure and sense of <em>propriety</em> even in the most trying circumstances." / "The question of <em>propriety</em> arose when the senior partner began socialising with junior staff." / "He dressed and spoke with impeccable <em>propriety</em>, leaving no room for criticism."`,
+    tone: "Formal and somewhat old-fashioned in everyday speech, but still very much alive in professional, legal, and social contexts. Often carries connotations of social performance and the management of appearances. 'A breach of propriety' signals that norms have been violated. The plural 'proprieties' refers specifically to the rules of correct behaviour in a given social setting.",
+    related: "Decorum, decency, correctness, seemliness, respectability, etiquette. Antonym: impropriety, indecorum, vulgarity."
+  },
+  {
+    word: "Proprietary",
+    definition: "Relating to an owner or ownership; belonging exclusively to a particular person or company, especially under patent, trademark, or trade secret. A proprietary product is one that is privately owned and controlled — competitors cannot freely copy or use it. The word also carries a behavioural sense: someone who acts in a proprietary manner behaves as though they have exclusive claim or ownership over something.",
+    examples: `"The software uses <em>proprietary</em> algorithms that the company has never published." / "He spoke about her in a <em>proprietary</em> way that made her deeply uncomfortable." / "The formula is <em>proprietary</em>; staff sign non-disclosure agreements before accessing it."`,
+    tone: "Neutral in business and legal contexts — simply meaning privately owned and protected. Can carry a slightly negative tone when applied to behaviour, implying possessiveness or an inappropriate sense of ownership over a person or shared resource. Often heard in technology, pharmaceuticals, and media industries.",
+    related: "Exclusive, patented, trademarked, privately owned, copyrighted. Behavioural sense: possessive, territorial. Antonym: open-source, public domain, shared."
+  },
+  {
+    word: "Conformity",
+    definition: "Behaviour or thinking that matches accepted standards, conventions, or the expectations of a group — compliance with norms rather than deviation from them. Conformity can be neutral (following rules sensibly) or negatively loaded (surrendering individual judgement to social pressure). In social psychology, it refers specifically to the tendency to align one's beliefs or behaviour with those of the majority, even against one's own better judgement.",
+    examples: `"The school prized <em>conformity</em> over creativity, which frustrated the more independent students." / "There is a certain <em>conformity</em> in professional dress codes that can be stifling." / "Social <em>conformity</em> ensures that shared spaces function smoothly, but it can also suppress dissent."`,
+    tone: "Neutral to mildly negative in contemporary usage. In many modern contexts, 'conformity' implies a loss of individuality or authenticity — something to be wary of rather than celebrated. In more conservative or institutional contexts, it can be positive, suggesting reliability and social cohesion. The tension between conformity and individuality is a rich theme in literature, psychology, and social commentary.",
+    related: "Compliance, orthodoxy, convention, obedience, uniformity, acquiescence. Antonym: nonconformity, individuality, dissent, rebellion."
+  },
+  {
+    word: "Idiosyncratic",
+    definition: "Peculiar or distinctive to a particular individual — reflecting personal habits, quirks, or ways of thinking that are not shared by most others. Something idiosyncratic is not just unusual in general; it is characteristic of one specific person or group. It implies individuality rather than eccentricity, though the two often overlap. An idiosyncratic style is one you would recognise as belonging to no one else.",
+    examples: `"Her <em>idiosyncratic</em> approach to filing — organised by colour rather than date — baffled her colleagues but worked perfectly for her." / "The director has an <em>idiosyncratic</em> visual style: long silences, oblique dialogue, and a refusal to explain." / "His speech was full of <em>idiosyncratic</em> phrases that his friends had come to find endearing."`,
+    tone: "Neutral to mildly admiring. Implies distinctiveness without necessarily suggesting disorder or dysfunction. More precise and more generous than 'eccentric' — it focuses on the personal signature of a trait rather than its strangeness. Common in literary criticism, art writing, and personality description.",
+    related: "Quirky, distinctive, eccentric, characteristic, singular, personal, unconventional. Noun: idiosyncrasy. Antonym: conventional, orthodox, typical."
+  },
+  {
+    word: "Avid",
+    definition: "Having an intense enthusiasm or eagerness for something — keenly interested and actively engaged. An avid reader does not just read regularly; they read hungrily and with genuine passion. The word conveys both frequency and depth of engagement. It is almost always positive and suggests that the enthusiasm is sustained rather than fleeting.",
+    examples: `"She was an <em>avid</em> reader of historical fiction, rarely seen without a book." / "He became an <em>avid</em> supporter of the local football club after moving to the city." / "The museum attracted <em>avid</em> collectors and casual visitors alike."`,
+    tone: "Positive and admiring. Implies commitment and genuine interest rather than mere habit. Slightly more emphatic than 'keen' or 'enthusiastic' — 'avid' suggests the interest is central to the person's identity or daily life. Commonly paired with nouns like reader, collector, follower, traveller, or fan.",
+    related: "Keen, enthusiastic, passionate, eager, fervent, dedicated. Antonym: indifferent, apathetic, casual."
+  },
+  {
+    word: "Zealous",
+    definition: "Showing great energy, fervour, and dedication in pursuit of a cause, belief, or goal. A zealous person is not just committed — they are actively and intensely committed, often to the point where their dedication becomes conspicuous or even overbearing. Zeal is admirable in moderate doses; in excess it shades into fanaticism. The word can be used approvingly or critically depending on context.",
+    examples: `"She was a <em>zealous</em> advocate for prison reform, speaking at conferences and writing tirelessly on the subject." / "The new manager was <em>zealous</em> about punctuality to a degree that made the team nervous." / "His <em>zealous</em> defence of the policy left no room for nuance or compromise."`,
+    tone: "Can be positive (admirable dedication) or negative (excessive, rigid intensity) depending on context and degree. The noun 'zeal' is generally positive; 'zealot' is almost always negative, implying dangerous fanaticism. 'Overzealous' is a common compound meaning too eager, often at the cost of judgement.",
+    related: "Fervent, ardent, passionate, dedicated, fanatical (in excess). Noun: zeal, zealot. Antonym: indifferent, half-hearted, lukewarm."
+  },
+  {
+    word: "Benevolent",
+    definition: "Well-meaning and kindly; generously disposed toward the welfare of others. A benevolent person wishes others well and acts on that wish — through generosity, goodwill, or charitable action. The word implies both a positive inner disposition and outward expression of it. It is often used of authority figures who exercise power kindly: a benevolent ruler, a benevolent employer.",
+    examples: `"The foundation was established by a <em>benevolent</em> industrialist who believed wealth carried obligation." / "She regarded him with a <em>benevolent</em> smile that put even nervous newcomers at ease." / "The regime presented itself as <em>benevolent</em>, though critics noted the iron hand beneath the velvet glove."`,
+    tone: "Positive and warm. Suggests genuine goodwill rather than mere politeness. Often used in formal or slightly elevated registers — more dignified than 'kind' or 'nice.' In political contexts, 'benevolent' can be used with some irony, as in 'benevolent dictatorship' — where the goodwill is real but unchecked.",
+    related: "Kind, generous, charitable, philanthropic, well-meaning, magnanimous. Noun: benevolence. Antonym: malevolent, hostile, selfish."
+  },
+  {
+    word: "Vindicate",
+    definition: "To clear someone of blame, suspicion, or criticism — to show that a person, decision, or belief was right, justified, or not guilty of what was alleged. To be vindicated is to be proved right after a period of doubt or accusation. The word carries a strong sense of relief and restored honour: one is not just declared innocent but seen to have been unfairly doubted.",
+    examples: `"The new evidence <em>vindicated</em> her completely, and the charges were dropped." / "He felt <em>vindicated</em> when the project he had championed against opposition proved a success." / "History has largely <em>vindicated</em> her decision, though it was deeply unpopular at the time."`,
+    tone: "Positive and satisfying in connotation — vindicating someone restores their standing. Common in legal, political, and personal contexts. The noun 'vindication' carries a slightly triumphant quality. Often used with 'feel vindicated' — a personal sense of justified relief after being proved right.",
+    related: "Exonerate, acquit, absolve, justify, clear, uphold. Noun: vindication. Antonym: condemn, incriminate, discredit."
+  },
+  {
+    word: "Dualism",
+    definition: "The view that reality consists of two fundamentally distinct and irreducible principles, substances, or categories. Most commonly encountered as mind–body dualism (the idea that mind and body are separate substances), associated with Descartes, who argued that the thinking mind is non-physical while the body is physical. Dualism appears in many forms: moral dualism (good vs. evil), theological dualism (God vs. Satan), and metaphysical dualism more broadly.",
+    examples: `"Cartesian <em>dualism</em> poses the famous problem of how an immaterial mind can interact with a physical body." / "The film's moral <em>dualism</em> — heroes who are purely good, villains who are purely evil — felt simplistic to adult viewers." / "Eastern philosophies often resist Western <em>dualism</em>, preferring to see opposites as complementary rather than opposed."`,
+    tone: "Academic and philosophical, but also relevant in theology, psychology, and cultural criticism. When used loosely, it can describe any tendency to divide the world into two opposing categories. 'Dualistic thinking' in everyday language often implies oversimplification — a failure to acknowledge complexity between two poles.",
+    related: "Mind–body problem, Cartesian dualism, monism (the opposing view), dichotomy, binary thinking. Antonym: monism, holism."
+  },
+  {
+    word: "Platonic",
+    definition: "In everyday use: intimate and affectionate but not romantic or sexual — a close relationship without physical desire. In philosophical use: relating to Plato or Platonism, particularly the theory of Forms — abstract, perfect ideals of which physical things are imperfect copies. A 'platonic ideal' is the perfect, abstract version of something. Both senses derive from the Greek philosopher Plato, though the romantic sense comes specifically from his dialogue on love, the <em>Symposium</em>.",
+    examples: `"Their relationship remained <em>platonic</em> despite years of close friendship and obvious mutual admiration." / "The architect spoke of a <em>platonic</em> ideal of the city — ordered, harmonious, and perfectly rational." / "He insisted the late-night messages were entirely <em>platonic</em>, which his partner found difficult to believe."`,
+    tone: "The everyday (non-romantic) sense is neutral and widely understood. The philosophical sense is more elevated — knowing it implies familiarity with Plato and classical philosophy. 'Platonic love' was originally about spiritual, non-physical love between souls, not just friendship; the modern sense has narrowed it considerably.",
+    related: "Non-romantic, chaste, spiritual (relationship sense). Ideal, abstract, archetypal (philosophical sense). Related: Plato, Forms, idealism, the Symposium."
+  },
+  {
+    word: "Eugenicists",
+    definition: "People who advocate for or practise eugenics — the now widely discredited belief that the human population can or should be 'improved' by selectively encouraging reproduction among those deemed to have 'desirable' traits and discouraging or preventing reproduction among those deemed 'undesirable.' Eugenics was popular among some scientific and political circles in the late 19th and early 20th centuries and was used to justify forced sterilisations, racial discrimination, and ultimately the genocidal policies of Nazi Germany.",
+    examples: `"Early 20th-century <em>eugenicists</em> argued that poverty and crime were hereditary, a claim that has since been thoroughly rejected." / "The programme was promoted by prominent <em>eugenicists</em> who believed they were acting in the interests of society." / "Modern genetics has dismantled the pseudoscientific foundations on which <em>eugenicists</em> built their arguments."`,
+    tone: "Always used in a critical or historical context. Eugenics is considered a moral atrocity and a scientific failure. The word 'eugenicist' today is never a neutral description — it carries condemnation. Essential vocabulary for understanding 20th-century history, the history of science, racism, disability rights, and bioethics.",
+    related: "Eugenics, Social Darwinism, scientific racism, forced sterilisation, ableism. Related historical context: Nazi Germany, the Holocaust, early 20th-century progressive movements."
+  },
+  {
+    word: "Pedagogy",
+    definition: "The theory, practice, and art of teaching — how education is conceived, designed, and delivered. Pedagogy is not just about what is taught but how, why, and to whom, and with what underlying beliefs about learning, knowledge, and the role of the teacher. Different pedagogical approaches reflect different values: a traditional pedagogy may emphasise authority and transmission of knowledge; a progressive pedagogy may centre student autonomy and critical thinking.",
+    examples: `"The course was remarkable not just for its content but for its <em>pedagogy</em> — students were encouraged to challenge every assumption." / "Her <em>pedagogy</em> drew heavily on Paulo Freire, treating education as a tool for liberation rather than compliance." / "Digital technology has forced educators to rethink their <em>pedagogy</em> from the ground up."`,
+    tone: "Academic and professional — used by educators, researchers, and policy makers. More specific and reflective than 'teaching method.' Using 'pedagogy' signals awareness that teaching is not neutral — it embodies values and assumptions. The adjective 'pedagogical' is common in academic writing.",
+    related: "Teaching, instruction, didactics, educational theory, curriculum, andragogy (teaching adults). Key thinkers: Paulo Freire, John Dewey, Lev Vygotsky."
+  },
+  {
+    word: "Humanism",
+    definition: "A broad philosophical and ethical stance that centres human beings — their dignity, reason, and capacity for self-determination — rather than divine authority or supernatural belief. Secular humanism holds that human beings can lead ethical, meaningful lives without religion. Renaissance humanism referred to the revival of classical learning and a shift toward human achievement and potential as worthy subjects of study. In both senses, the human being is the measure and the focus.",
+    examples: `"Her <em>humanism</em> led her to prioritise education and welfare as moral imperatives, regardless of religious belief." / "Renaissance <em>humanism</em> placed human achievement at the centre of art, literature, and philosophy." / "He described himself as a secular humanist — committed to ethics and meaning, but without theological foundations."`,
+    tone: "Generally positive and aspirational — humanism is associated with reason, compassion, dignity, and progress. Can be secular or compatible with religious belief depending on the tradition. In academic contexts, 'humanist' also refers to a scholar of the humanities. The term can be contested: critics argue that some forms of humanism are culturally narrow or exclude non-Western traditions.",
+    related: "Secular humanism, Renaissance humanism, liberalism, rationalism, Enlightenment. Key figures: Erasmus, Pico della Mirandola, Bertrand Russell. Antonym (loosely): theocracy, religious fundamentalism, nihilism."
+  },
+  {
+    word: "Tendentious",
+    definition: "Expressing or promoting a particular point of view — especially one that is controversial or partisan — rather than presenting facts objectively. A tendentious argument, article, or account is slanted: it selects, frames, and emphasises material in a way that pushes the reader toward a predetermined conclusion. The word implies that the bias is intentional or at least habitual, and it is almost always used critically. Note the spelling: it is 'tendentious,' not 'tendencious.'",
+    examples: `"The documentary was widely criticised as <em>tendentious</em> — every piece of evidence had been selected to support a single narrative." / "His <em>tendentious</em> reading of the historical record ignored everything that contradicted his thesis." / "The report, though superficially balanced, was <em>tendentious</em> in its choice of what to include and what to omit."`,
+    tone: "Critical and formal. Using this word signals intellectual precision — you are not just saying something is biased or unfair, but that it systematically distorts by design. Common in academic criticism, media analysis, and political commentary. A strong word; do not use it lightly.",
+    related: "Biased, partisan, one-sided, polemical, slanted, propagandistic. Antonym: impartial, balanced, objective, even-handed."
+  },
+  {
+    word: "Nonchalant",
+    definition: "Appearing calm, casual, and unconcerned — giving the impression that something requires no effort or causes no anxiety, even when it might. A nonchalant manner is relaxed and unhurried, often to the point of seeming indifferent. The word carries a French elegance: it suggests cool composure rather than careless negligence. It can be genuinely admirable (unflappable under pressure) or slightly irritating (performing a coolness that seems affected).",
+    examples: `"She accepted the award with a <em>nonchalant</em> shrug that somehow made her seem even more impressive." / "He was <em>nonchalant</em> about the risk in a way that worried his colleagues considerably." / "The goalkeeper's <em>nonchalant</em> save drew as many gasps as the shot itself."`,
+    tone: "Neutral to mildly admiring. Implies effortless cool. Can shade into criticism if the nonchalance seems inappropriate to the seriousness of a situation. The adverb 'nonchalantly' is equally useful: doing something nonchalantly is doing it with studied ease.",
+    related: "Casual, cool, unruffled, composed, blasé, insouciant, laid-back. Antonym: anxious, flustered, tense, concerned."
+  },
+  {
+    word: "Poignant",
+    definition: "Evoking a keen sense of sadness, tenderness, or emotional depth — touching in a way that is also slightly painful. Poignancy is bittersweet: the feeling it names is both beautiful and sad, often arising from an awareness of loss, transience, or what cannot be recovered. A poignant moment is one that moves you because it reminds you of something precious and fragile.",
+    examples: `"The final scene was deeply <em>poignant</em> — a reunion that arrived too late to change anything." / "There was something <em>poignant</em> about the old photograph: everyone in it had since died." / "Her speech was <em>poignant</em> without being sentimental — honest about grief without wallowing in it."`,
+    tone: "Emotionally resonant and literary. More precise than 'sad' or 'moving' — poignancy implies a complexity of feeling, a mixture of beauty and sorrow. Common in literary criticism, film reviews, and personal writing. The noun 'poignancy' and adverb 'poignantly' are equally useful.",
+    related: "Moving, touching, affecting, bittersweet, tender, elegiac. Antonym: flat, unemotional, unmoved."
+  },
+  {
+    word: "Fortitude",
+    definition: "Courage and inner strength in the face of pain, adversity, or difficulty — the capacity to endure hard things without breaking. Fortitude is not the bold courage of action (that is more 'valour' or 'bravery') but the quieter, sustained courage of endurance: bearing hardship with composure and resolve over time. It is one of the classical cardinal virtues.",
+    examples: `"She faced her illness with extraordinary <em>fortitude</em>, maintaining her humour and her work until the very end." / "The survivors' <em>fortitude</em> in the aftermath of the disaster was widely admired." / "Running a small business requires not just skill but genuine <em>fortitude</em> — the ability to absorb setbacks and keep going."`,
+    tone: "Formal and admiring. Elevates the quality it describes — choosing 'fortitude' over 'resilience' or 'strength' gives the observation a classical, moral weight. Common in eulogies, profiles of remarkable people, and writing about courage under sustained difficulty.",
+    related: "Resilience, endurance, stoicism, courage, grit, perseverance, tenacity. Antonym: weakness, fragility, cowardice."
+  },
+  {
+    word: "Unassailable",
+    definition: "Impossible to attack, question, or defeat — so strong, well-founded, or secure that no challenge can succeed against it. An unassailable argument cannot be refuted; an unassailable position cannot be captured; an unassailable reputation cannot be damaged by criticism. The word conveys total solidity and invulnerability.",
+    examples: `"Her credentials were <em>unassailable</em> — three decades of experience and an unblemished record." / "The prosecution built an <em>unassailable</em> case from physical evidence, witness testimony, and financial records." / "He held an <em>unassailable</em> lead in the polls with two weeks to go."`,
+    tone: "Formal and emphatic. A strong word that should not be used loosely — if something is truly unassailable, there is no legitimate counter-argument or threat. Common in legal, political, and intellectual contexts. Using it about something that can in fact be challenged makes the writer look overconfident.",
+    related: "Irrefutable, impregnable, incontrovertible, undeniable, invulnerable, bulletproof. Antonym: vulnerable, contestable, weak, questionable."
+  },
+  {
+    word: "Antithetical",
+    definition: "Directly opposed or contrary to something — representing the exact opposite in nature, tendency, or principle. If two things are antithetical, they are not merely different but fundamentally incompatible: each negates or contradicts the other. The word comes from 'antithesis,' the rhetorical term for a contrast of opposing ideas, and carries a strong sense of structural, principled opposition.",
+    examples: `"A culture of fear is <em>antithetical</em> to genuine creativity." / "His personal behaviour was <em>antithetical</em> to everything the organisation publicly stood for." / "The two philosophies are <em>antithetical</em>: one centres individual freedom, the other collective obligation."`,
+    tone: "Formal and precise. More absolute than 'contrary' or 'opposed' — antithetical implies a fundamental, structural incompatibility, not just a disagreement. Common in academic writing, political commentary, and ethical argument. The noun 'antithesis' is equally important: 'X is the antithesis of Y.'",
+    related: "Contrary, opposing, contradictory, incompatible, diametrically opposed. Noun: antithesis. Antonym: aligned with, consistent with, synonymous."
+  },
+  {
+    word: "Witty",
+    definition: "Showing or characterised by quick, clever, and amusing intelligence in speech or writing. A witty person says the unexpected thing with perfect timing, combining insight with economy of expression. Wit is the quality; witty is its adjective. Something witty is not merely funny — it is funny because it is sharp, perceptive, and well-constructed. The humour is in the observation, the turn of phrase, or the surprising connection made.",
+    examples: `"Her <em>witty</em> one-liners masked a genuine understanding of the absurdity of the situation." / "The play is full of <em>witty</em> dialogue that rewards attention — jokes land differently on a second viewing." / "He was <em>witty</em> in conversation but found it hard to translate that into his writing."`,
+    tone: "Positive and admiring. Being called witty is a genuine compliment — it implies intelligence, social dexterity, and originality. Distinguished from 'funny' (which is more general), 'humorous' (which can be gentler), and 'sarcastic' (which can be unkind). Wit is always pointed; witty humour is never accidental.",
+    related: "Clever, sharp, quick, amusing, droll, sparkling, epigrammatic. Noun: wit. Antonym: dull, plodding, humourless."
+  },
+  {
+    word: "Fanatic",
+    definition: "A person filled with excessive, uncritical zeal for a cause, belief, or interest — to a degree that impairs judgement, crowds out other considerations, or makes them difficult to reason with. A fanatic's commitment has crossed from dedication into obsession. The word is almost always negative: it implies that the intensity is disproportionate and potentially dangerous, whether in religion, politics, sport, or ideology.",
+    examples: `"He was a <em>fanatic</em> about punctuality — meetings that started a minute late visibly unsettled him." / "The movement attracted genuine reformers but also <em>fanatics</em> who were interested in purity rather than progress." / "She described herself jokingly as a coffee <em>fanatic</em>, though her colleagues suspected the addiction was real."`,
+    tone: "Negative in serious contexts; affectionately self-deprecating in casual ones ('I'm a total fanatic about this band'). In political, religious, or ideological contexts, calling someone a fanatic is a strong criticism — it implies their commitment has become irrational and potentially harmful. The adjective is 'fanatical'; the abstract noun is 'fanaticism.'",
+    related: "Zealot, extremist, obsessive, devotee (milder), enthusiast (much milder). Adjective: fanatical. Noun: fanaticism. Antonym: moderate, pragmatist, sceptic."
+  },
+  {
+    word: "Amnesty",
+    definition: "An official pardon granted by a government or authority — typically to a group of people who have committed political offences or crimes — waiving prosecution or punishment. Amnesty is a collective act, distinguishing it from an individual pardon. It is often part of peace processes, post-conflict reconciliation, or policy changes (such as amnesties for illegal firearms or undocumented immigrants). The word comes from the Greek for 'forgetting.'",
+    examples: `"The new government announced a general <em>amnesty</em> for political prisoners detained under the previous regime." / "An <em>amnesty</em> scheme for illegal weapons allowed residents to hand in firearms without fear of prosecution." / "Critics argued that <em>amnesty</em> without accountability would leave victims without justice."`,
+    tone: "Formal and political. Associated with transitional justice, human rights, and statecraft. Amnesty International takes its name from this concept — the idea that those imprisoned for their beliefs deserve a form of collective reprieve. The word carries complex moral weight: amnesties can enable peace but may also deny justice to victims.",
+    related: "Pardon, clemency, reprieve, forgiveness, immunity, exoneration. Related: Amnesty International, transitional justice, reconciliation. Antonym: prosecution, punishment, retribution."
+  },
+  {
+    word: "Furore",
+    definition: "A wave of angry, excited, or indignant public reaction — an uproar or commotion caused by something controversial, scandalous, or surprising. A furore is collective and public: it involves many voices expressing strong feeling, often simultaneously. It is typically short-lived but intense, and is frequently stirred by media coverage. (Note: the British spelling is 'furore'; the American spelling is 'furor.')",
+    examples: `"The minister's remarks caused an immediate <em>furore</em>, with calls for resignation from all sides of the chamber." / "The novel caused a <em>furore</em> on publication but is now regarded as a classic." / "A <em>furore</em> erupted online after the company announced it would discontinue the product."`,
+    tone: "Vivid and slightly dramatic. More colourful than 'controversy' or 'uproar' — a furore implies noise, heat, and collective agitation. Common in British journalism and political commentary. Using it signals that the reaction was both strong and widespread, not just critical.",
+    related: "Uproar, outcry, controversy, commotion, storm, hullabaloo, brouhaha. Antonym: calm, indifference, silence."
+  },
+  {
+    word: "Disgruntled",
+    definition: "Feeling dissatisfied, displeased, or resentful — typically because of a perceived injustice, unmet expectation, or poor treatment. A disgruntled person is not in a blind rage but in a state of sulky, simmering discontent. The word often implies that the grievance feels legitimate to the person experiencing it, even if others might see it differently. Common in workplace contexts: disgruntled employees, disgruntled customers.",
+    examples: `"A <em>disgruntled</em> former employee leaked the documents to the press." / "The <em>disgruntled</em> passengers demanded compensation after the third delay in two days." / "He returned from the meeting <em>disgruntled</em>, convinced his proposal had been dismissed without a fair hearing."`,
+    tone: "Mildly negative and often wry. The word has a slightly comic quality — 'disgruntled' sounds a little like what it means: deflated, peeved, put-out. Common in everyday speech and journalism. Interestingly, 'gruntled' — meaning satisfied or pleased — technically exists as a back-formation but is rarely used except humorously.",
+    related: "Dissatisfied, displeased, aggrieved, resentful, discontented, put out, miffed. Antonym: satisfied, content, pleased."
+  },
+  {
+    word: "Absconding",
+    definition: "Leaving hurriedly and secretly, typically to escape from custody, legal proceedings, or the consequences of wrongdoing. To abscond is not merely to leave — it is to flee before justice, authority, or responsibility can catch up with you. The word implies both stealth and guilt: the person who absconds does so precisely because they know they should not. It is most commonly used in legal, financial, and criminal contexts.",
+    examples: `"The suspect was arrested at the airport after <em>absconding</em> from bail." / "The treasurer was found to have been <em>absconding</em> with company funds for over three years." / "The school reported the student missing after he was seen <em>absconding</em> through the back gate."`,
+    tone: "Formal and legal in register. More precise and more charged than simply 'running away' or 'fleeing' — absconding implies deliberate evasion of authority or accountability. Common in court reporting, police statements, and financial fraud cases. The noun form is 'absconder.'",
+    related: "Flee, escape, bolt, run off, defect, disappear. Legal context: bail absconder, abscond from custody. Noun: absconder."
+  },
+  {
+    word: "Promenade",
+    definition: "A paved public walkway, especially one along a seafront or in a park, designed for leisurely strolling. As a verb, to promenade is to walk in a slow, unhurried, often showy manner — to be seen as much as to see. The word carries connotations of leisure, social display, and a pleasantly civilised pace of life. It entered English from French and retains an elegant, slightly old-fashioned quality.",
+    examples: `"They strolled along the <em>promenade</em> as the sun set over the sea, ice creams in hand." / "Victorian society used the evening <em>promenade</em> as an occasion for courtship and social display." / "The new development included a waterfront <em>promenade</em> lined with cafés and benches."`,
+    tone: "Warm and slightly nostalgic. Evokes seaside towns, Victorian formality, and the pleasure of unhurried public life. Also used in music — the famous 'Promenade' theme in Mussorgsky's <em>Pictures at an Exhibition</em> — and in dance, where it describes a figure in which partners walk in a set pattern. The BBC Proms (Promenade Concerts) take their name from the original practice of audience members standing and walking.",
+    related: "Esplanade, seafront, boulevard, walkway, boardwalk. Verb: to stroll, to parade, to saunter."
+  },
+  {
+    word: "Shrubbery",
+    definition: "An area planted with shrubs; a collection of shrubs grown as a garden feature. The word refers both to a particular part of a garden — a bed or border of ornamental shrubs — and, more loosely, to any collection of low woody plants. In British culture it carries strong associations with formal Victorian and Edwardian garden design, and has acquired a gentle comic quality through its use in literature and comedy.",
+    examples: `"He emerged from the <em>shrubbery</em> looking thoroughly dishevelled and hoping no one had seen him." / "The garden had a well-maintained <em>shrubbery</em> running along the south wall, thick with rhododendrons and laurel." / "The cat had taken to sleeping in the <em>shrubbery</em>, invisible from the house."`,
+    tone: "Mildly comic in everyday use — the word has a pleasing, slightly pompous sound that English writers and comedians have long appreciated. Most famously, it features in Monty Python's <em>Holy Grail</em> ('We want... a shrubbery!'). In gardening contexts it is perfectly straightforward. Either way, it is a distinctly British word.",
+    related: "Shrubs, bushes, undergrowth, hedge, thicket, border, bed. Related: topiary, herbaceous border, kitchen garden."
+  },
+  {
+    word: "Pyrenees",
+    definition: "The mountain range forming the natural border between France and Spain, stretching approximately 430 kilometres from the Atlantic coast in the west to the Mediterranean in the east. The Pyrenees include the small sovereign state of Andorra and reach their highest point at Aneto (3,404 m) in Spain. The range gives its name to the Pyrenean Mountain Dog (also called the Great Pyrenees) — a large, white livestock-guarding breed originating in the region.",
+    examples: `"They spent two weeks hiking in the <em>Pyrenees</em>, crossing from France into Spain via high mountain passes." / "The <em>Pyrenees</em> have historically acted as a natural barrier between the Iberian Peninsula and the rest of Europe." / "The Great <em>Pyrenees</em> is a breed known for its calm temperament and thick white coat, bred to guard flocks on mountain pastures."`,
+    tone: "Geographical and factual when referring to the mountain range; the breed name (Great Pyrenees or Pyrenean Mountain Dog) is the more likely reason this word appears in an English vocabulary context. Knowing the geography enriches the breed name: these are genuinely mountain dogs, shaped by the landscape they are named after.",
+    related: "Alps, Apennines, Cantabrian Mountains, Andorra, Basque Country. Dog breed: Great Pyrenees (US), Pyrenean Mountain Dog (UK), Patou (French)."
+  },
+  {
+    word: "Countenance",
+    definition: "As a noun: a person's face or facial expression, particularly as it reflects inner feeling or character — 'his countenance fell'; 'a serene countenance.' As a verb: to accept, support, or tolerate something — to give it your approval or permit it to continue. Both senses are formal and literary. 'I will not countenance such behaviour' means 'I will not permit or tolerate it.' The two meanings are connected by the older sense of 'bearing' or 'composure.'",
+    examples: `"His <em>countenance</em> betrayed none of the anxiety he was surely feeling." / "The board refused to <em>countenance</em> any delay to the project." / "She maintained a composed <em>countenance</em> throughout the difficult interview."`,
+    tone: "Formal and literary in both senses. As a noun, it is more evocative and dignified than 'face' or 'expression' — it implies that the face carries meaning. As a verb, it is a strong formal word for permitting or tolerating, often used in the negative: 'I cannot countenance this.' Common in legal writing, formal correspondence, and literary prose.",
+    related: "Noun: face, expression, visage, bearing, demeanour. Verb: tolerate, permit, sanction, accept, endorse. Antonym (verb): refuse to countenance, prohibit, oppose."
+  },
+  {
+    word: "Ingratiate",
+    definition: "To bring oneself into favour with someone by flattery, excessive agreeableness, or deliberate attempts to please — typically in a way that is calculated rather than genuine. To ingratiate yourself with someone is to work at making them like you, usually for personal advantage. The word almost always implies insincerity: genuine warmth is not ingratiating. The reflexive construction 'ingratiate oneself with' is the standard form.",
+    examples: `"He spent the first weeks of the job trying to <em>ingratiate</em> himself with senior partners." / "Her attempts to <em>ingratiate</em> herself with the committee were so transparent that they had the opposite effect." / "The new arrival quickly <em>ingratiated</em> himself with the group through a combination of flattery and small favours."`,
+    tone: "Mildly negative. 'Ingratiating' as an adjective describes behaviour that is excessively eager to please in a way that seems false or manipulative. 'He gave an ingratiating smile' is not a compliment. The word implies that the charm is instrumental — deployed to achieve something rather than freely given.",
+    related: "Flatter, curry favour, toady, fawn, kowtow, butter up. Adjective: ingratiating. Antonym: alienate, antagonise, offend."
+  },
+  {
+    word: "Vanity",
+    definition: "Excessive pride in or admiration of one's own appearance, abilities, or achievements; conceit about one's personal qualities. More broadly, in philosophical and religious usage (especially the biblical tradition), vanity refers to the emptiness or worthlessness of worldly things — the futility of placing too much value on what does not last. 'Vanity of vanities, all is vanity' (Ecclesiastes) is the most famous expression of this second sense.",
+    examples: `"His <em>vanity</em> was such that he checked his reflection in every window he passed." / "She appealed to his <em>vanity</em>, knowing that flattery was the fastest route to his cooperation." / "The novel treats ambition and <em>vanity</em> as twin vices, each feeding the other."`,
+    tone: "Negative in both senses. As personal conceit, vanity implies an excessive self-regard that blinds a person to their faults and to others' needs. In the philosophical sense, it implies a deeper foolishness — placing value in things that are transient. 'Vanity Fair' (both Bunyan's allegory and Thackeray's novel) uses the word to criticise a society obsessed with appearances and social climbing.",
+    related: "Conceit, narcissism, self-admiration, pride, egotism. Philosophical sense: futility, emptiness, transience. Adjective: vain. Antonym: humility, modesty."
+  },
+  {
+    word: "Ostensible",
+    definition: "Appearing to be true or genuine on the surface, but not necessarily so in reality — stated or seeming to be the case, but possibly concealing something else. 'The ostensible purpose' of something is the declared reason, which may not be the real one. The word signals a gap between presentation and reality: what is ostensible is what is shown; what is actual may be different.",
+    examples: `"The <em>ostensible</em> purpose of the visit was a courtesy call; its real aim was to gather intelligence." / "He was <em>ostensibly</em> working late, though his colleagues had their doubts." / "The charity's <em>ostensible</em> mission concealed a more complicated set of financial arrangements."`,
+    tone: "Formal and slightly suspicious in tone. Using 'ostensible' signals that the speaker does not fully accept the stated explanation — it implies doubt without making an open accusation. The adverb 'ostensibly' is very widely used: 'ostensibly doing X' implies they may actually be doing something else. Common in journalism, legal contexts, and political analysis.",
+    related: "Apparent, supposed, nominal, professed, so-called, putative. Adverb: ostensibly. Antonym: actual, real, genuine."
+  },
+  {
+    word: "Inadvertently",
+    definition: "Without intention; accidentally or unintentionally — doing something without meaning to, usually as a result of inattention or oversight rather than deliberate action. To do something inadvertently is to do it by mistake, not by design. The word is important because it signals the absence of intent, which can be highly significant in legal, moral, and social contexts.",
+    examples: `"She <em>inadvertently</em> forwarded the email to the entire company." / "He had <em>inadvertently</em> revealed the location of the safe by glancing at it when questioned." / "The policy change <em>inadvertently</em> penalised the very people it was designed to help."`,
+    tone: "Neutral and precise. Used to clarify that an action was accidental rather than deliberate — important in contexts where intent matters (law, apologies, explanations of mistakes). More formal than 'accidentally' and more precise than 'by mistake.' The adjective 'inadvertent' is equally common.",
+    related: "Accidentally, unintentionally, by mistake, unwittingly, unknowingly. Adjective: inadvertent. Antonym: deliberately, intentionally, knowingly."
+  },
+  {
+    word: "Precarious",
+    definition: "Not securely held; dependent on chance or uncertain conditions; dangerously lacking in stability. A precarious position is one that could collapse or deteriorate at any moment — physically, financially, or situationally. The word comes from the Latin for 'obtained by prayer' (i.e., held only at someone else's pleasure), which captures its essential instability: precarious things are not held by right or secure foundation.",
+    examples: `"The climber found herself in a <em>precarious</em> position on the ice face, unable to go up or down." / "The company's finances were <em>precarious</em> long before the crisis finally brought it down." / "He balanced the whole structure on a <em>precarious</em> arrangement of books and hope."`,
+    tone: "Vivid and evocative — one of those words that sounds like what it means. Equally at home describing physical danger (a precarious ledge), financial fragility (a precarious income), or political vulnerability (a precarious majority). 'Precarious position' is a very common and useful phrase. The adverb 'precariously' is equally useful: 'balanced precariously.'",
+    related: "Unstable, insecure, shaky, uncertain, risky, perilous, tenuous. Noun: precariousness. Antonym: stable, secure, safe, solid."
+  },
+  {
+    word: "Scrawl",
+    definition: "To write or draw in a hurried, untidy, and irregular way — producing something that is difficult to read or lacks the care of considered handwriting. As a noun, a scrawl is the resulting messy writing itself. The word implies speed and carelessness: a scrawl is not calligraphy gone wrong, it is writing done with no pretence of neatness. It can be affectionate or critical depending on context.",
+    examples: `"She left a hasty <em>scrawl</em> on a Post-it note that took him several minutes to decipher." / "His signature had degenerated over the years from careful cursive to an indecipherable <em>scrawl</em>." / "The margin was covered in pencilled <em>scrawls</em> — questions, underlinings, half-formed thoughts."`,
+    tone: "Slightly negative but often affectionate. A scrawl is not necessarily bad — some people scrawl expressively, and the word can suggest spontaneity and urgency. In contrast to 'scribble' (which is often random or childlike), a scrawl tends to be an attempt at actual words or images, just rendered messily. Common in descriptions of handwriting, graffiti, and hurried notes.",
+    related: "Scribble, scratch, squiggle, handwriting, jot. Antonym: print, inscribe, write neatly, calligraphy."
+  },
+  {
+    word: "Sentimental",
+    definition: "Excessively or weakly emotional; prompted by or appealing to tender feelings, nostalgia, or sentiment in a way that may be considered shallow or excessive. Something sentimental prioritises emotional feeling — especially warm, nostalgic, or romantic feeling — over reason or realism. The word occupies uneasy ground: sentiment itself is not wrong, but 'sentimental' often implies that the emotion is indulged beyond what the object deserves, or manufactured rather than genuine.",
+    examples: `"She kept the broken watch for <em>sentimental</em> reasons — it had been her father's." / "The film was widely dismissed as <em>sentimental</em> and manipulative, though audiences loved it." / "He was not a <em>sentimental</em> man, but the old photograph gave him pause."`,
+    tone: "Ambivalent. In everyday use, 'sentimental value' is positive — something matters beyond its monetary worth because of memories attached to it. But 'sentimental' applied to art, writing, or argument is often critical: it implies emotional dishonesty, a reaching for feeling that has not been earned. The distinction between sentiment (genuine feeling) and sentimentality (excessive or false feeling) is a classic critical one.",
+    related: "Nostalgic, emotional, mawkish, saccharine, soppy, tender. Noun: sentimentality, sentiment. Antonym: unsentimental, hard-headed, detached, realist."
+  },
+  {
+    word: "Pronouncement",
+    definition: "A formal or authoritative declaration — a statement made with weight and confidence, intended to be heard, recorded, and taken seriously. A pronouncement is not casual speech; it is delivered with a sense of occasion and finality. It can be official (a legal or political pronouncement) or personal (when someone speaks as if delivering a verdict). The word sometimes carries a wry or ironic edge, implying that the speaker takes themselves more seriously than the occasion warrants.",
+    examples: `"The committee issued a formal <em>pronouncement</em> on the proposed changes to the curriculum." / "He made his <em>pronouncements</em> with such confidence that few dared to disagree." / "Her <em>pronouncement</em> that the meeting was over was delivered as if from a great height."`,
+    tone: "Formal and slightly grand. Neutral when used of genuine official declarations; gently satirical when applied to someone who speaks with more gravity than the situation demands. The verb 'pronounce' is related: to pronounce judgement is to deliver it formally. 'Pronouncement' elevates the act of speaking into something ceremonial.",
+    related: "Declaration, statement, ruling, verdict, edict, proclamation, dictum. Verb: pronounce, declare. Antonym: suggestion, murmur, aside, tentative remark."
+  },
+  {
+    word: "Uninitiated",
+    definition: "Not yet introduced to or knowledgeable about a particular activity, subject, or group — lacking the experience, knowledge, or insider understanding that members or experts possess. 'The uninitiated' (used as a collective noun) refers to those who are outsiders to a given practice or field of knowledge. The word implies that there is something to be learned, a threshold to cross, before full understanding is possible.",
+    examples: `"To the <em>uninitiated</em>, the rules of cricket can seem bewilderingly complex." / "She explained the process without condescension, aware that most of her audience were <em>uninitiated</em>." / "The jargon of the profession is impenetrable to the <em>uninitiated</em> — deliberately so, some would argue."`,
+    tone: "Neutral and slightly formal. 'The uninitiated' is a useful phrase for acknowledging that not everyone shares the same background knowledge — it treats outsiders with respect rather than contempt. Can carry a hint of insider exclusivity: there is something the uninitiated have not yet been let into. Common in explanatory writing, instruction, and gentle cultural commentary.",
+    related: "Novice, outsider, layperson, newcomer, beginner. Antonym: initiated, expert, insider, adept, versed."
+  },
+  {
+    word: "Impressionism",
+    definition: "An art movement originating in France in the 1860s–70s, characterised by loose brushwork, an interest in the effects of light and atmosphere rather than precise detail, and a preference for painting ordinary scenes — landscapes, cafés, rivers, gardens — in natural light. The name came from a mocking review of Monet's painting <em>Impression, Sunrise</em> (1872). Key figures include Monet, Renoir, Degas, Pissarro, and Berthe Morisot. The movement later influenced music (Debussy, Ravel) and literature.",
+    examples: `"<em>Impressionism</em> marked a decisive break from academic painting — its loose, sketch-like surfaces scandalised traditionalists at first." / "The museum's collection of French <em>Impressionism</em> draws visitors from around the world." / "Musical <em>Impressionism</em> — as in Debussy's nocturnes — attempts to evoke atmosphere rather than tell a story."`,
+    tone: "Art-historical and cultural. Knowing Impressionism well means knowing not just the name but its context — it was radical before it became beloved. The word 'impressionistic' (see next card) has since acquired a looser, more general meaning. Central to any discussion of modern Western art history and a touchstone for understanding how artistic revolutions happen.",
+    related: "Post-Impressionism (Cézanne, Van Gogh, Gauguin), Pointillism, Realism, Plein-air painting. Key artists: Monet, Renoir, Degas, Pissarro, Morisot, Sisley."
+  },
+  {
+    word: "Impressionistic",
+    definition: "Based on or creating a general impression rather than precise, factual detail — conveying atmosphere, feeling, or outline rather than systematic accuracy. When applied to writing, reporting, or argument, 'impressionistic' means the account is suggestive and evocative but not rigorous or comprehensive. It can be a compliment (the writing is atmospheric and vivid) or a criticism (the analysis is superficial and lacks evidence).",
+    examples: `"Her account of the evening was vivid but <em>impressionistic</em> — she remembered feelings more than facts." / "The report was criticised for being too <em>impressionistic</em>, relying on anecdote rather than data." / "He painted an <em>impressionistic</em> picture of city life that captured its mood without pretending to document it."`,
+    tone: "Ambivalent — positive when evoking artistic or literary vividness, negative when suggesting a lack of rigour. Derived from Impressionism but used far beyond art: you can have an impressionistic argument, impressionistic research, or an impressionistic memory. Knowing the artistic root enriches the metaphorical use.",
+    related: "Evocative, suggestive, sketchy, approximate, atmospheric, anecdotal. Antonym: precise, systematic, rigorous, evidence-based, detailed."
+  },
+  {
+    word: "Luddites",
+    definition: "Originally, members of a 19th-century English working-class movement who destroyed textile machinery in protest against the effects of industrialisation on skilled workers' livelihoods (1811–1816). In modern usage, a Luddite is someone who opposes new technology or automation, whether from principle, fear, or a preference for traditional methods. The term is now often used loosely — and sometimes unfairly — to dismiss any scepticism about technological progress.",
+    examples: `"The early <em>Luddites</em> were not simply afraid of machines — they were defending their trades against wage cuts and exploitation." / "He was branded a <em>Luddite</em> for questioning whether the new system was actually an improvement." / "Modern <em>Luddites</em> argue that the pace of automation is outstripping society's ability to adapt."`,
+    tone: "The historical sense is neutral and specific. The modern sense ranges from affectionate (someone who prefers analogue methods) to dismissive (someone who irrationally resists progress). Knowing the historical context matters: the original Luddites had coherent economic grievances, not a blanket fear of technology. Using 'Luddite' as a simple insult misrepresents the history.",
+    related: "Technophobe, anti-modernist, traditionalist, saboteur (historical). Related: Industrial Revolution, skilled labour, automation. Antonym: early adopter, technophile, innovator."
+  },
+  {
+    word: "Equivocal",
+    definition: "Open to more than one interpretation; deliberately ambiguous or unclear — not giving a straightforward answer or having a clear meaning. Something equivocal can be read in multiple ways, and this ambiguity is often intentional: an equivocal response neither commits nor refuses. The word also means uncertain or questionable — an equivocal result is one that does not clearly point in one direction.",
+    examples: `"Her response was <em>equivocal</em> — polite enough not to refuse, vague enough not to promise anything." / "The evidence was <em>equivocal</em>: it could support either interpretation equally well." / "When asked directly, he gave an <em>equivocal</em> answer that left everyone exactly as uncertain as before."`,
+    tone: "Slightly negative — equivocal language is often associated with evasiveness, political caution, or a reluctance to commit. The related verb 'to equivocate' means to use deliberately ambiguous language to avoid the truth. Contrast with 'unequivocal' (clear, definite, admitting no doubt) — which is strongly positive.",
+    related: "Ambiguous, evasive, non-committal, vague, unclear, double-edged. Verb: equivocate. Antonym: unequivocal, clear, definitive, direct, unambiguous."
+  },
+  {
+    word: "Egalitarian",
+    definition: "Believing in or based on the principle that all people are equal and deserve equal rights, opportunities, and treatment — regardless of birth, class, race, gender, or other distinctions. An egalitarian society is one that actively works to reduce unfair hierarchies and privilege. As an adjective, it describes policies, structures, attitudes, or cultures that embody this principle. As a noun, an egalitarian is a person who holds these beliefs.",
+    examples: `"The cooperative was run on <em>egalitarian</em> principles — every member had an equal vote, regardless of their investment." / "She had an <em>egalitarian</em> instinct that made her deeply uncomfortable with deference and hierarchy." / "The Scandinavian countries are often held up as models of <em>egalitarian</em> social policy."`,
+    tone: "Positive in most contexts — egalitarianism is associated with fairness, justice, and democratic values. Can be contested in political debate: some argue that strict egalitarianism conflicts with meritocracy or individual freedom. The noun 'egalitarianism' is the formal term for the political philosophy. The word has a French root: égalité, one of the three watchwords of the Revolution.",
+    related: "Democratic, equal, fair, classless, inclusive, non-hierarchical. Noun: egalitarianism. Antonym: hierarchical, elitist, aristocratic, inegalitarian."
+  },
+  {
+    word: "Purported",
+    definition: "Claimed or alleged to be the case, but not established or confirmed — presented as true without proof being offered. 'The purported reason,' 'the purported author,' 'the purported benefits' all signal that the claim is someone else's assertion, not a verified fact. The word is used to maintain distance from an unverified claim without directly calling it false.",
+    examples: `"The document's <em>purported</em> author has since denied any involvement in its production." / "The treatment's <em>purported</em> benefits have not been confirmed by clinical trials." / "Police were investigating the <em>purported</em> sighting of the suspect near the scene."`,
+    tone: "Formal and cautious. Common in journalism, legal writing, and academic prose where it is important to distinguish between what is claimed and what is verified. Using 'purported' is a signal of epistemic precision — the writer is not endorsing the claim, merely reporting it. The adverb 'purportedly' functions the same way: 'purportedly the oldest building in the city.'",
+    related: "Alleged, supposed, claimed, so-called, ostensible, reputed. Adverb: purportedly. Antonym: confirmed, verified, proven, established."
+  },
+  {
+    word: "Buoyed",
+    definition: "Lifted in spirits; made more cheerful, confident, or optimistic — as though emotionally raised up by a positive development. The word comes from the nautical sense of a buoy keeping something afloat, and the metaphor is apt: to be buoyed is to feel supported and elevated rather than weighed down. It is almost always used in the passive or past participial form: 'buoyed by the news,' 'buoyed by encouragement.'",
+    examples: `"<em>Buoyed</em> by the positive reviews, she began work on a second novel with renewed confidence." / "The team returned home <em>buoyed</em> by their unexpected victory." / "He felt <em>buoyed</em> by the conversation — it was the first time in weeks he had felt genuinely hopeful."`,
+    tone: "Warm and positive. Implies that something external has given someone an emotional or psychological lift — hope, energy, or confidence restored from outside. More vivid than 'encouraged' or 'heartened' because the physical image of floating is always present. Very common in journalism and sports writing.",
+    related: "Heartened, encouraged, lifted, uplifted, emboldened, invigorated. Antonym: deflated, discouraged, disheartened, weighed down."
+  },
+  {
+    word: "Emeritus",
+    definition: "A title given to someone — most commonly a professor — who has retired from an active role but retains their title as an honour. 'Professor Emeritus' means a professor who has formally retired but whose distinction is acknowledged by allowing them to keep the title. The word comes from Latin: <em>emereri</em>, to earn one's discharge. It signals both past achievement and ongoing respect. Occasionally used more broadly for other honorary retired positions.",
+    examples: `"After forty years at the university, she was appointed Professor <em>Emeritus</em> of English Literature." / "The <em>Emeritus</em> Director still attends board meetings and remains an influential voice in the organisation." / "He was awarded <em>Emeritus</em> status — a recognition that his contribution to the field outlasted his formal tenure."`,
+    tone: "Formal and respectful. Exclusively used as a post-nominal title or modifier. The feminine form is 'Emerita'; the plural is 'Emeriti' (masculine/mixed) or 'Emeritae' (feminine). In practice, 'Emeritus' is used for all genders in many institutions. A mark of distinction — not every retiree receives it; it must be formally conferred.",
+    related: "Honorary, retired, distinguished, laureate. Related titles: Professor Emeritus, Director Emeritus. Latin root: emereri (to serve out one's time)."
+  },
+  {
+    word: "Brood parasite",
+    definition: "An animal — most famously a bird — that lays its eggs in the nests of other species, leaving the host parents to incubate and raise the young at the expense of their own offspring. The common cuckoo is the classic example: it lays a single egg in a warbler's or reed bunting's nest, the cuckoo chick hatches first, ejects the host's eggs, and is then fed exclusively by its unwitting foster parents. Brood parasitism is an evolved reproductive strategy, not a moral failing.",
+    examples: `"The cuckoo is Europe's best-known <em>brood parasite</em>, its distinctive call masking a ruthlessly effective reproductive strategy." / "Researchers studying <em>brood parasitism</em> have found that some host species have evolved the ability to recognise and reject foreign eggs." / "The honeyguide is an African <em>brood parasite</em> that also leads humans to beehives — one of the most extraordinary inter-species relationships known."`,
+    tone: "Scientific and precise — a term from ornithology and evolutionary biology. Essential vocabulary for anyone interested in natural history or bird behaviour. The concept is widely used metaphorically to describe those who benefit from others' labour without reciprocating. Understanding the biological reality enriches both the scientific and the metaphorical uses.",
+    related: "Cuckoo, honeyguide, cowbird, host species, nest parasite. Related concepts: evolutionary arms race, mimicry, host-parasite coevolution."
+  },
+  {
+    word: "Expectant",
+    definition: "Having or showing anticipation of something about to happen; waiting with hope, excitement, or tension for an event that feels imminent. Most commonly encountered in 'expectant mother' — a woman who is pregnant and awaiting the birth of her child. More broadly, an expectant mood or crowd is one poised on the edge of something, alert and ready. The feeling is one of suspended anticipation: the event has not yet arrived but feels very close.",
+    examples: `"The <em>expectant</em> crowd fell silent as the announcement was about to be made." / "She sat in the waiting room with the quiet patience of someone who had long since made peace with uncertainty, though her eyes were <em>expectant</em>." / "An <em>expectant</em> hush settled over the theatre as the lights dimmed."`,
+    tone: "Positive and slightly charged with anticipation. 'Expectant mother' is a warm, formal alternative to 'pregnant woman.' In other contexts the word conveys a held-breath quality — something is coming, and the waiting is both tense and hopeful. More dignified and less clinical than 'waiting' or 'anticipating.'",
+    related: "Anticipatory, hopeful, awaiting, eager, poised. 'Expectant mother': pregnant woman. Noun: expectation, expectancy. Antonym: indifferent, resigned, unsuspecting."
+  },
+  {
+    word: "Arduously",
+    definition: "In a way that involves great effort, difficulty, and endurance — requiring hard, sustained labour to accomplish. To do something arduously is to do it with toil: there is nothing easy or swift about it. The word comes from the Latin <em>arduus</em>, meaning steep or difficult, which captures the essential image: climbing something that does not yield easily. The adjective 'arduous' is more common; 'arduously' is used to describe the manner in which a hard task is undertaken.",
+    examples: `"She had <em>arduously</em> transcribed every letter in the archive by hand over several months." / "The team worked <em>arduously</em> through the night to meet the morning deadline." / "He had <em>arduously</em> built the business from nothing, and was not about to let it collapse without a fight."`,
+    tone: "Serious and admiring. Implies that the effort involved was genuinely significant — not merely inconvenient but demanding of real stamina and perseverance. Choosing 'arduously' rather than 'hard' or 'laboriously' elevates the description and honours the effort. The adjective 'arduous' is very commonly used: an arduous journey, an arduous process, an arduous climb.",
+    related: "Laboriously, strenuously, painstakingly, doggedly, with difficulty. Adjective: arduous. Antonym: easily, effortlessly, with ease."
+  },
+  {
+    word: "Heaves",
+    definition: "As a verb: to lift, pull, throw, or move something with great effort — to shift a heavy object by force. Also used for involuntary physical movements: the chest heaves in laboured breathing; the stomach heaves before vomiting. As a noun, 'the heaves' is an informal term for retching or nausea. The word conveys physical exertion and involuntary bodily force — something is moved or moves powerfully, whether by human effort or physical compulsion.",
+    examples: `"She <em>heaves</em> the sack of compost over her shoulder with a grunt and carries it to the far bed." / "His chest <em>heaves</em> as he crosses the finish line, gasping for air." / "With a single mighty heave, they shifted the boulder far enough to clear the path."`,
+    tone: "Physical and vivid. The word is most at home in active, bodily description — manual labour, exertion, breathlessness, nausea. It gives prose an immediate, muscular quality. Common in narrative writing for depicting physical effort or distress. The present tense 'heaves' is particularly dynamic in storytelling: 'he heaves himself upright' is more immediate and strenuous than 'he stands up.'",
+    related: "Hauls, lugs, hoists, strains, lifts, throws. Nausea sense: retches, gags. Noun: a heave, the heaves. Antonym: lowers, sets down, places gently."
+  },
+  {
+    word: "Foist",
+    definition: "To impose something unwanted on someone — to push or pass off an undesirable thing, person, or idea onto another without their genuine consent. To foist something on someone is to make them accept it without giving them a real choice. The word implies both cunning and a degree of disrespect: the person doing the foisting knows the recipient would refuse if asked fairly.",
+    examples: `"She resented having the extra work <em>foisted</em> on her without any discussion." / "He tried to <em>foist</em> his own interpretation of events on the group, but they had read the minutes themselves." / "The policy was <em>foisted</em> on the department from above, with no consultation and no right of appeal."`,
+    tone: "Negative and slightly indignant. 'Foist' implies imposition by stealth or authority — the recipient has no real say. It carries resentment on behalf of the person being put upon. Common in complaints about unwanted work, unwelcome guests, or decisions handed down from above. The standard construction is 'foist something on/upon someone.'",
+    related: "Impose, inflict, offload, palm off, force upon, saddle with. Antonym: offer freely, present for consideration, request."
+  },
+  {
+    word: "Ruse",
+    definition: "A clever trick, stratagem, or deception used to achieve something — a plan that works by misleading others about one's true intentions. A ruse is not brute force or direct dishonesty; it is a piece of cunning misdirection. It may be harmless (a playful ruse among friends) or calculated (a military or criminal ruse designed to gain an advantage). The word comes from Old French, originally related to doubling back on one's tracks to confuse pursuers.",
+    examples: `"The phone call was a <em>ruse</em> to get him out of the office while the surprise party was set up." / "The soldiers' apparent retreat was a <em>ruse</em> to draw the enemy into an ambush." / "She saw through the <em>ruse</em> immediately — the 'wrong number' had called three times in an hour."`,
+    tone: "Slightly playful or neutral when the deception is harmless; more serious when used of military or criminal strategy. The word has a storytelling quality — ruses belong to the world of adventure, espionage, and cleverness. More elegant than 'trick' or 'scam'; implies intelligence as well as deception.",
+    related: "Trick, stratagem, ploy, scheme, subterfuge, deception, manoeuvre. Antonym: straightforward approach, direct action, transparency."
+  },
+  {
+    word: "Fledged",
+    definition: "Of a young bird: having developed the feathers necessary for flight — mature enough to leave the nest and fly independently. A 'fully fledged' bird is one ready for independent life. Metaphorically, 'fully fledged' means fully developed, qualified, or established: a fully fledged member, a fully fledged career, a fully fledged crisis. The image is of something that has grown from dependence to independence, from potential to realisation.",
+    examples: `"The young swallows had <em>fledged</em> by August, filling the wires outside the barn with restless chatter." / "She was now a fully <em>fledged</em> barrister, having passed her final examinations the previous spring." / "What began as a minor disagreement had become a fully <em>fledged</em> institutional crisis."`,
+    tone: "Neutral in its ornithological sense — a precise biological term for a developmental stage. In metaphorical use ('fully fledged'), it is positive and confirmatory: something has arrived at its complete or mature form. The phrase 'fully fledged' is far more common in everyday English than 'fledged' alone, but knowing the bird origin enriches the metaphor.",
+    related: "Fully fledged, fully developed, mature, qualified, independent. Ornithological: fledgling (a bird that has just fledged), nestling (before fledging). Antonym: unfledged, nascent, undeveloped, fledgling (metaphorical)."
+  },
+  {
+    word: "Furtive",
+    definition: "Behaving in a way that is secretive and suggests guilt or the desire to avoid being seen — darting, shifty, and careful not to attract attention. A furtive glance is quick and sidelong; a furtive movement is done when no one is looking. The word implies not just secrecy but the consciousness of wrongdoing or the fear of discovery: people act furtively when they believe they are doing something they should not.",
+    examples: `"He cast a <em>furtive</em> glance over his shoulder before slipping the note under the door." / "There was something <em>furtive</em> about the way she left the room — too quickly, too quietly." / "The fox moved with <em>furtive</em> precision along the garden wall, alert to every sound."`,
+    tone: "Suggestive of guilt or concealment. More vivid and specific than 'secretive' — furtive behaviour is not just private but watchful, quick, and nervous. A furtive person is not simply discreet; they are checking whether they are being observed. Common in fiction for conveying suspicion, guilt, or the presence of hidden agendas. The adverb 'furtively' is equally useful.",
+    related: "Surreptitious, stealthy, shifty, sneaky, covert, clandestine. Adverb: furtively. Antonym: open, candid, bold, transparent, unabashed."
+  }
+];
+
+// ─────────────────────────────────────────────
+//  SETS  (indices into WORDS array)
+// ─────────────────────────────────────────────
+const SETS = [
+  { label: "Set 1",   words: WORDS.slice(0, 10),  sub: "Words 1 – 10" },
+  { label: "Set 2",   words: WORDS.slice(10, 20), sub: "Words 11 – 20" },
+  { label: "Set 3",   words: WORDS.slice(20, 31), sub: "Words 21 – 31" },
+  { label: "Set 4",   words: WORDS.slice(31, 41), sub: "Words 32 – 41" },
+  { label: "Set 5",   words: WORDS.slice(41, 51), sub: "Words 42 – 51" },
+  { label: "Set 6",   words: WORDS.slice(51, 61), sub: "Words 52 – 61" },
+  { label: "Set 7",   words: WORDS.slice(61, 72), sub: "Words 62 – 72" },
+  { label: "Set 8",   words: WORDS.slice(72, 82), sub: "Words 73 – 82" },
+  { label: "Set 9",   words: WORDS.slice(82, 92),  sub: "Words 83 – 92" },
+  { label: "Set 10",  words: WORDS.slice(92, 102), sub: "Words 93 – 102" },
+  { label: "Random",  words: null,                 sub: "10 from full pool" }
+];
+
+// ─────────────────────────────────────────────
+//  GAME STATE
+// ─────────────────────────────────────────────
+let deck = [];
+let currentIndex = 0;
+let isFlipped = false;
+let selectedMode = -1;
+let deckSize = 10;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function selectMode(idx) {
+  selectedMode = idx;
+  // Update button styles
+  for (let i = 0; i < 11; i++) {
+    document.getElementById('modeBtn' + i).classList.toggle('selected', i === idx);
+  }
+  // Enable start button
+  const btn = document.getElementById('startBtn');
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
+}
+
+function startGame() {
+  if (selectedMode === -1) return;
+
+  if (selectedMode === 10) {
+    // Random: 10 from full pool
+    deck = shuffle(WORDS).slice(0, 10);
+    deckSize = 10;
+  } else {
+    const pool = SETS[selectedMode].words;
+    deck = shuffle(pool);
+    deckSize = deck.length;
+  }
+
+  currentIndex = 0;
+  isFlipped = false;
+
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('progressArea').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+  document.getElementById('cardScene').classList.remove('hidden');
+
+  showCard();
+}
+
+function returnToMenu() {
+  document.getElementById('endScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+}
+
+function showCard() {
+  const word = deck[currentIndex];
+  isFlipped = false;
+
+  // Reset flip
+  const scene = document.getElementById('cardScene');
+  scene.classList.remove('flipped');
+
+  // Re-trigger entrance animation
+  scene.style.animation = 'none';
+  scene.offsetHeight; // reflow
+  scene.style.animation = '';
+
+  // Populate front
+  document.getElementById('frontWord').textContent = word.word;
+  document.getElementById('cardNumber').textContent = `${currentIndex + 1} / ${deckSize}`;
+  document.getElementById('cardNumberBack').textContent = `${currentIndex + 1} / ${deckSize}`;
+
+  // Populate back
+  document.getElementById('backWord').innerHTML = word.word;
+  document.getElementById('backDef').innerHTML = word.definition;
+  document.getElementById('backEx').innerHTML = word.examples;
+  document.getElementById('backTone').innerHTML = word.tone;
+  document.getElementById('backRelated').innerHTML = word.related;
+
+  // Update progress
+  const pct = Math.round((currentIndex / deckSize) * 100);
+  document.getElementById('progressText').textContent = `Word ${currentIndex + 1} of ${deckSize}`;
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  const scene = document.getElementById('cardScene');
+  if (isFlipped) {
+    scene.classList.add('flipped');
+  } else {
+    scene.classList.remove('flipped');
+  }
+}
+
+function nextWord() {
+  currentIndex++;
+  if (currentIndex >= deckSize) {
+    endGame();
+  } else {
+    showCard();
+  }
+}
+
+function endGame() {
+  document.getElementById('cardScene').classList.add('hidden');
+  document.getElementById('actions').classList.add('hidden');
+  document.getElementById('progressArea').classList.add('hidden');
+  // Update end sub-text with set info
+  const setInfo = selectedMode === 10
+    ? '10 random words from the full pool.'
+    : `All ${deckSize} words from ${SETS[selectedMode].label}.`;
+  document.getElementById('endSub').innerHTML = `${setInfo}<br>Play again or choose a different set.`;
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
